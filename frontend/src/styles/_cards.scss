@@ -1,0 +1,10 @@
+// _cards.scss
+
+@use "./variables" as *;
+
+.card {
+  background: $surface;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: $shadow;
+}
