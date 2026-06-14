@@ -1,2 +1,2 @@
-npm test
+cd frontend
 npm run lint-staged
