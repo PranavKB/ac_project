@@ -1,7 +1,5 @@
 package com.cdac.carpooling.dto;
 
-import java.util.List;
-
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -31,21 +29,4 @@ public class RideCreationRequest {
     @Valid 
     private LocationDto destination;
 
-    @Data
-    public static class LocationDto {
-        @NotBlank(message = "Location name is required")
-        private String name;
-
-        @NotNull(message = "Geo coordinates object wrapper is required")
-        @Valid
-        private GeoJsonDto location;
-    }
-
-    @Data
-    public static class GeoJsonDto {
-        private String type = "Point";
-
-        @NotNull(message = "Coordinates array cannot be null")
-        private List<Double> coordinates;
-    }
 }

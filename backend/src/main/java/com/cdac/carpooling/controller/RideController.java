@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cdac.carpooling.dto.ApiResponse;
+import com.cdac.carpooling.dto.LocationDto;
 import com.cdac.carpooling.dto.RideCreationRequest;
 import com.cdac.carpooling.dto.RideSearchRequest;
 import com.cdac.carpooling.model.LocationPoint;
@@ -65,7 +66,7 @@ public class RideController {
         return ApiResponse.success(saved,"Ride created Successfully");
     }
 
-    private LocationPoint parseLocationDto(RideCreationRequest.LocationDto dto) {
+    private LocationPoint parseLocationDto(LocationDto dto) {
         if (dto == null)
             return null;
         LocationPoint lp = new LocationPoint();
