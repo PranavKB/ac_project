@@ -24,8 +24,7 @@ import java.time.Instant;
 import java.util.List;
 
 @SpringBootTest
-@AutoConfigureMockMvc 
-                                                                         
+@AutoConfigureMockMvc                                                                        
 @ActiveProfiles("test") 
 class RideControllerTest {
 
