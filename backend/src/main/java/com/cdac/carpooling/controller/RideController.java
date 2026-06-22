@@ -32,7 +32,7 @@ public class RideController {
     private final RideRepository rideRepository;
 
     @PostMapping
-    public ResponseEntity<Ride> createRide(@Valid @RequestBody RideCreationRequest request) {
+    public ResponseEntity<ApiResponse<Object>> createRide(@Valid @RequestBody RideCreationRequest request) {
         Ride ride = new Ride();
         ride.setDriverId(request.getDriverId());
         ride.setDriverName(request.getDriverName());
@@ -43,15 +43,26 @@ public class RideController {
         if (request.getDepartureTime() != null && !request.getDepartureTime().isBlank()) {
             ride.setDepartureTime(Instant.parse(request.getDepartureTime()));
         } else {
-            // Default 1 hour from now
+            // Default 1 hour from start time
             ride.setDepartureTime(Instant.now().plusSeconds(3600));
         }
 
         ride.setSource(parseLocationDto(request.getSource()));
         ride.setDestination(parseLocationDto(request.getDestination()));
-
+        List<Double> srccoords = request.getSource().getLocation().getCoordinates();
+        List<Double> dstcoords = request.getDestination().getLocation().getCoordinates();
+        List<List<Double>> routeCoords = List.of(srccoords, dstcoords);
+        if (routeCoords != null && !routeCoords.isEmpty()) {
+            ride.setRouteCoords(routeCoords);
+            ride.setH3RouteSegments(h3Service.pathToH3Segments(routeCoords));
+            // Initialize currentLocation as starting coordinate
+            ride.setCurrentLocation(srccoords);
+        }
         Ride saved = rideRepository.save(ride);
-        return ResponseEntity.ok(saved);
+        if (saved==null){
+            return ApiResponse.error("Failed to create ride. Please try again.");
+        }
+        return ApiResponse.success(saved,"Ride created Successfully");
     }
 
     private LocationPoint parseLocationDto(RideCreationRequest.LocationDto dto) {
@@ -71,6 +82,7 @@ public class RideController {
             lp.setLocation(gp);
         }
         return lp;
+
     }
 
     @PostMapping("/search")
@@ -85,7 +97,7 @@ public class RideController {
         try {
             List<List<Double>> simplePath = List.of(src, dst);
             List<String> passengerH3 = h3Service.pathToH3Segments(simplePath);
-            var matches = rideMatchingService.findMatchingRides(passengerH3);
+            List<Map<String, Object>>  matches = rideMatchingService.findMatchingRides(passengerH3);
             return ApiResponse.success(matches, "Matching rides fetched successfully");
         } catch (Exception e) {
             return ApiResponse.error("Something went wrong on the server: " + e.getMessage());
@@ -93,5 +105,3 @@ public class RideController {
     }
 
 }
-
-
