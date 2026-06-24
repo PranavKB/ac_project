@@ -1,7 +1,7 @@
 import { useState } from "react";
 import LocationInput from "../components/LocationInput";
-import { rideAPI } from "../../api";
-
+import { rideAPI, routeAPI } from "../../api";
+/* eslint-disable no-unused-vars, max-lines-per-function */
 const rideDetailsInitialState = {
   driverId: null,
   driverName: null,
@@ -11,8 +11,51 @@ const rideDetailsInitialState = {
   destination: null,
 };
 
-export default function PublishRide() {
+const getRequestBody = (rideDetails) => ({
+  driverId: "6a3aabf5752b7b75f246d300",
+  driverName: "John Doe",
+  totalSeats: rideDetails.totalSeats,
+  departureTime: `${rideDetails.departureTime}:00Z`,
+  source: {
+    name: rideDetails.source.name,
+    location: {
+      type: "Point",
+      coordinates: [rideDetails.source.lat, rideDetails.source.lng],
+    },
+  },
+  destination: {
+    name: rideDetails.destination.name,
+    location: {
+      type: "Point",
+      coordinates: [rideDetails.destination.lat, rideDetails.destination.lng],
+    },
+  },
+});
+
+export default function PublishRide({ onMapUpdate }) {
   const [rideDetails, setRideDetails] = useState(rideDetailsInitialState);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+
+  const handlePreview = async () => {
+    const { source, destination } = rideDetails;
+    if (!source || !destination) {
+      alert("Please select both source and destination first.");
+      return;
+    }
+    setIsPreviewing(true);
+    try {
+      const routeCoords = await routeAPI.fetch(source, destination);
+      if (onMapUpdate) {
+        onMapUpdate({
+          source: [source.lat, source.lng],
+          destination: [destination.lat, destination.lng],
+          routeCoords,
+        });
+      }
+    } finally {
+      setIsPreviewing(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,36 +69,29 @@ export default function PublishRide() {
       return;
     }
 
-    console.log("Publishing Ride with details:", rideDetails);
+    const requestBody = getRequestBody(rideDetails);
 
-    const requestBody = {
-      driverId: "6a3aabf5752b7b75f246d300",
-      driverName: "John Doe",
-      totalSeats: rideDetails.totalSeats,
-      departureTime: `${rideDetails.departureTime}:00Z`,
-      source: {
-        name: rideDetails.source.name,
-        location: {
-          type: "Point",
-          coordinates: [rideDetails.source.lat, rideDetails.source.lng],
-        },
-      },
-      destination: {
-        name: rideDetails.destination.name,
-        location: {
-          type: "Point",
-          coordinates: [
-            rideDetails.destination.lat,
-            rideDetails.destination.lng,
-          ],
-        },
-      },
-    };
-
-    console.log("Publishing Ride Data Payload:", requestBody);
     try {
       const response = await rideAPI.create(requestBody);
       console.log("Ride published successfully:", response);
+
+      // After publish, keep the published route visible on the map
+      if (onMapUpdate) {
+        const routeCoords = await routeAPI.fetch(
+          rideDetails.source,
+          rideDetails.destination,
+        );
+        onMapUpdate({
+          source: [rideDetails.source.lat, rideDetails.source.lng],
+          destination: [
+            rideDetails.destination.lat,
+            rideDetails.destination.lng,
+          ],
+          routeCoords,
+        });
+      }
+
+      alert("Ride published successfully!");
     } catch (error) {
       console.error("Error publishing ride:", error);
       alert("Failed to publish ride.");
@@ -95,7 +131,35 @@ export default function PublishRide() {
           }
         />
 
-        {/* Departure Time element using datetime-local field input */}
+        {/* Preview Route */}
+        {/* <button
+          type="button"
+          onClick={handlePreview}
+          disabled={
+            !rideDetails.source || !rideDetails.destination || isPreviewing
+          }
+          style={{
+            width: "100%",
+            padding: "10px",
+            marginBottom: "15px",
+            background:
+              !rideDetails.source || !rideDetails.destination
+                ? "#ccc"
+                : "#17a2b8",
+            color: "#fff",
+            border: "none",
+            borderRadius: "4px",
+            fontSize: "15px",
+            cursor:
+              !rideDetails.source || !rideDetails.destination
+                ? "not-allowed"
+                : "pointer",
+          }}
+        >
+          {isPreviewing ? "Loading preview..." : "Preview Route"}
+        </button> */}
+
+        {/* Departure Time */}
         <div style={{ marginBottom: "15px" }}>
           <label
             style={{

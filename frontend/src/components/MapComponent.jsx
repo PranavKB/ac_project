@@ -87,8 +87,14 @@ export default function MapComponent({
 
   const center = source ? source : defaultCenter;
 
+  const mapKey =
+    source && destination
+      ? `${source[0]},${source[1]}-${destination[0]},${destination[1]}`
+      : "default";
+
   return (
     <div
+      key={mapKey}
       style={{
         height: "100%",
         width: "100%",
