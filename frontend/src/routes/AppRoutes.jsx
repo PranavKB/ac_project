@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import StyleGuide from "../pages/StyleGuide/StyleGuide";
 import DriverDashboard from "../components/DriverDashboard";
+import LoginPage from "../pages/Auth/LoginPage";
+import RegisterPage from "../pages/Auth/RegisterPage";
 
 function AppRoutes() {
   return (
@@ -15,6 +17,8 @@ function AppRoutes() {
             </>
           }
         />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route path="/driver" element={<DriverDashboard />} />
         <Route path="/style-guide" element={<StyleGuide />} />
       </Routes>
