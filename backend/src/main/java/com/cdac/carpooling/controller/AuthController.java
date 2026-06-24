@@ -19,25 +19,23 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<Object>> register(@RequestBody RegisterRequest request) {
-      User user= authService.register(
-            request.getName(),
-            request.getEmail(),
-            request.getPhone(),
-            request.getPassword(),
-            request.getRoles()
-        );
-        return ApiResponse.success(user,"User register successfully.");
+        User user = authService.register(
+                request.getName(),
+                request.getEmail(),
+                request.getPhone(),
+                request.getPassword(),
+                request.getRoles());
+        return ApiResponse.success(user, "User registered successfully.");
     }
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<Object>> login(@RequestBody LoginRequest request) {
-       User user= authService.login(
-            request.getEmail(), 
-            request.getPassword()
-        );
-        if(user==null){
+        User user = authService.login(
+                request.getEmail(),
+                request.getPassword());
+        if (user == null) {
             return ApiResponse.error("User not found.");
         }
-        return ApiResponse.success(user,"User loggedin successfully.");
+        return ApiResponse.success(user, "User logged in successfully.");
     }
 }
