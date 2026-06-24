@@ -1,12 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { geocode } from "../../api";
 
 export default function LocationInput({ placeholder, onSelect }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
 
+  const skipNextFetch = useRef(false);
+
   useEffect(() => {
     if (query.length < 3) return;
+
+    if (skipNextFetch.current) {
+      // Reset the flag and skip this fetch
+      skipNextFetch.current = false;
+      return;
+    }
 
     const delayDebounceFn = setTimeout(async () => {
       const data = await geocode(query);
@@ -26,6 +34,8 @@ export default function LocationInput({ placeholder, onSelect }) {
   };
 
   const handleSelect = (item) => {
+    // To prevent the useEffect from fetching again when we set the query to the selected item's name
+    skipNextFetch.current = true;
     setQuery(item.name);
     setResults([]);
 
