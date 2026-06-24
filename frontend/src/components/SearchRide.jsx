@@ -4,7 +4,7 @@ import { rideAPI } from "../../api";
 
 const initialState = { source: null, destination: null };
 
-// --- Function 1: Match Card Renderer (Under 30 lines) ---
+// --- Function 1: Match Card Renderer
 function RideMatchCard({ match }) {
   const { ride } = match;
   return (
@@ -39,7 +39,7 @@ function RideMatchCard({ match }) {
   );
 }
 
-// --- Function 2: Isolated Search Input Form layout (Under 40 lines) ---
+// --- Function 2: Isolated Search Input Form layout
 function SearchForm({ loading, onSearch, onSelectLocation }) {
   return (
     <form onSubmit={onSearch}>
@@ -81,7 +81,7 @@ function SearchForm({ loading, onSearch, onSelectLocation }) {
   );
 }
 
-// --- Function 3: Main Engine Orchestrator (Under 75 lines) ---
+// --- Function 3: Main Engine Orchestrator
 export default function SearchRide() {
   const [searchDetails, setSearchDetails] = useState(initialState);
   const [searchResults, setSearchResults] = useState([]);
