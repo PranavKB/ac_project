@@ -35,17 +35,17 @@ class MessageControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "passenger1", roles = {"PASSENGER"})
+    @WithMockUser(username = "passenger1", roles = { "PASSENGER" })
     void sendMessage_shouldPersistAndReturnMessage() throws Exception {
 
         String payload = """
-            {
-              "rideId":"ride-300",
-              "senderId":"sender-1",
-              "senderName":"Nina",
-              "messageText":"Hello there"
-            }
-            """;
+                {
+                  "rideId":"ride-300",
+                  "senderId":"sender-1",
+                  "senderName":"Nina",
+                  "messageText":"Hello there"
+                }
+                """;
 
         mockMvc.perform(post("/api/messages")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -57,22 +57,21 @@ class MessageControllerTest {
 
         assertEquals(
                 1,
-                messageRepository.findByRideIdOrderByTimestampAsc("ride-300").size()
-        );
+                messageRepository.findByRideIdOrderByTimestampAsc("ride-300").size());
     }
 
     @Test
-    @WithMockUser(username = "passenger1", roles = {"PASSENGER"})
+    @WithMockUser(username = "passenger1", roles = { "PASSENGER" })
     void getRideMessages_shouldReturnMessagesForRide() throws Exception {
 
         String payload = """
-            {
-              "rideId":"ride-400",
-              "senderId":"sender-2",
-              "senderName":"Omar",
-              "messageText":"Pickup at the station"
-            }
-            """;
+                {
+                  "rideId":"ride-400",
+                  "senderId":"sender-2",
+                  "senderName":"Omar",
+                  "messageText":"Pickup at the station"
+                }
+                """;
 
         mockMvc.perform(post("/api/messages")
                 .contentType(MediaType.APPLICATION_JSON)

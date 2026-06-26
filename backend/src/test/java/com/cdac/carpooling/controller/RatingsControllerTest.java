@@ -23,7 +23,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-class RatingControllerTest {
+class RatingsControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -41,7 +41,7 @@ class RatingControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "passenger1", roles = {"PASSENGER"})
+    @WithMockUser(username = "passenger1", roles = { "PASSENGER" })
     void submitRating_shouldCreateRatingForExistingRide() throws Exception {
 
         Ride ride = new Ride();
@@ -54,13 +54,13 @@ class RatingControllerTest {
         rideRepository.save(ride);
 
         String payload = """
-            {
-              "rideId":"ride-100",
-              "reviewerId":"reviewer-1",
-              "reviewedUserId":"driver-1",
-              "textReview":"Great ride"
-            }
-            """;
+                {
+                  "rideId":"ride-100",
+                  "reviewerId":"reviewer-1",
+                  "reviewedUserId":"driver-1",
+                  "textReview":"Great ride"
+                }
+                """;
 
         mockMvc.perform(post("/api/ratings")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -73,7 +73,7 @@ class RatingControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "passenger1", roles = {"PASSENGER"})
+    @WithMockUser(username = "passenger1", roles = { "PASSENGER" })
     void getRideRatings_shouldReturnRatings() throws Exception {
 
         Ride ride = new Ride();
@@ -84,13 +84,13 @@ class RatingControllerTest {
         rideRepository.save(ride);
 
         String payload = """
-            {
-              "rideId":"ride-200",
-              "reviewerId":"reviewer-2",
-              "reviewedUserId":"driver-2",
-              "textReview":"Very punctual"
-            }
-            """;
+                {
+                  "rideId":"ride-200",
+                  "reviewerId":"reviewer-2",
+                  "reviewedUserId":"driver-2",
+                  "textReview":"Very punctual"
+                }
+                """;
 
         mockMvc.perform(post("/api/ratings")
                 .contentType(MediaType.APPLICATION_JSON)
