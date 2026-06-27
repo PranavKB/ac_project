@@ -1,5 +1,5 @@
 import { useState } from "react";
-/* eslint-disable no-unused-vars */
+
 import MapComponent from "./MapComponent";
 import PublishRide from "./PublishRide";
 
@@ -20,16 +20,30 @@ function DriverDashboard() {
     <>
       <PublishRide onMapUpdate={handleMapUpdate} />
 
-      {/* {showMap && (
-        <div style={{ width: "800px", height: "450px" }}>
-          <MapComponent
-            source={mapProps.source}
-            destination={mapProps.destination}
-            routeCoords={mapProps.routeCoords}
-            currentLocation={null}
-          />
-        </div>
-      )} */}
+      <div
+        className="flex-col"
+        style={{ gap: 24, width: "100%", alignItems: "center" }}
+      >
+        {showMap && (
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "800px",
+              height: "450px",
+              border: "1px solid #e0e0e0",
+              borderRadius: "12px",
+              overflow: "hidden",
+            }}
+          >
+            <MapComponent
+              source={mapProps.source}
+              destination={mapProps.destination}
+              routeCoords={mapProps.routeCoords}
+              currentLocation={null}
+            />
+          </div>
+        )}
+      </div>
     </>
   );
 }

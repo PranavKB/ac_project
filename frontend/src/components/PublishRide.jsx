@@ -1,7 +1,8 @@
 import { useState } from "react";
 import LocationInput from "../components/LocationInput";
 import { rideAPI, routeAPI } from "../../api";
-/* eslint-disable no-unused-vars, max-lines-per-function */
+import useAuth from "../context/AuthContext/useAuth";
+/* eslint-disable max-lines-per-function */
 const rideDetailsInitialState = {
   driverId: null,
   driverName: null,
@@ -11,23 +12,23 @@ const rideDetailsInitialState = {
   destination: null,
 };
 
-const getRequestBody = (rideDetails) => ({
-  driverId: "6a3aabf5752b7b75f246d300",
-  driverName: "John Doe",
+const getRequestBody = (user, rideDetails) => ({
+  driverId: user.data.id,
+  driverName: user.data.name,
   totalSeats: rideDetails.totalSeats,
   departureTime: `${rideDetails.departureTime}:00Z`,
   source: {
     name: rideDetails.source.name,
     location: {
       type: "Point",
-      coordinates: [rideDetails.source.lat, rideDetails.source.lng],
+      coordinates: [rideDetails.source.lng, rideDetails.source.lat],
     },
   },
   destination: {
     name: rideDetails.destination.name,
     location: {
       type: "Point",
-      coordinates: [rideDetails.destination.lat, rideDetails.destination.lng],
+      coordinates: [rideDetails.destination.lng, rideDetails.destination.lat],
     },
   },
 });
@@ -35,6 +36,8 @@ const getRequestBody = (rideDetails) => ({
 export default function PublishRide({ onMapUpdate }) {
   const [rideDetails, setRideDetails] = useState(rideDetailsInitialState);
   const [isPreviewing, setIsPreviewing] = useState(false);
+
+  const { user } = useAuth();
 
   const handlePreview = async () => {
     const { source, destination } = rideDetails;
@@ -69,7 +72,7 @@ export default function PublishRide({ onMapUpdate }) {
       return;
     }
 
-    const requestBody = getRequestBody(rideDetails);
+    const requestBody = getRequestBody(user, rideDetails);
 
     try {
       const response = await rideAPI.create(requestBody);
@@ -132,7 +135,7 @@ export default function PublishRide({ onMapUpdate }) {
         />
 
         {/* Preview Route */}
-        {/* <button
+        <button
           type="button"
           onClick={handlePreview}
           disabled={
@@ -157,7 +160,7 @@ export default function PublishRide({ onMapUpdate }) {
           }}
         >
           {isPreviewing ? "Loading preview..." : "Preview Route"}
-        </button> */}
+        </button>
 
         {/* Departure Time */}
         <div style={{ marginBottom: "15px" }}>

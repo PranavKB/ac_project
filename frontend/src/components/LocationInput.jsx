@@ -40,7 +40,8 @@ export default function LocationInput({ placeholder, onSelect }) {
     setResults([]);
 
     if (onSelect) {
-      const [lat, lng] = item.location.coordinates;
+      // GeoJSON uses [lng, lat]
+      const [lng, lat] = item.location.coordinates;
       onSelect({ name: item.name, lat, lng });
     }
   };
