@@ -1,10 +1,14 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { authAPI } from "../../../api";
 import "./Login.scss";
+import useAuth from "../../context/AuthContext/useAuth";
 
 export default function LoginPage({ onTogglePage }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const { login } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -17,9 +21,9 @@ export default function LoginPage({ onTogglePage }) {
     try {
       const user = await authAPI.login(email, password);
 
-      localStorage.setItem("user", JSON.stringify(user));
+      login(user);
       alert("Login successful!");
-      //onLoginSuccess(user);
+      navigate("/driver");
     } catch (err) {
       setError(err.response?.data?.message || "Invalid email or password.");
     } finally {
