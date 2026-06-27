@@ -1,25 +1,41 @@
 import { useState } from "react";
 import { authAPI } from "../../../api";
 import "./Register.scss";
+import { useNavigate } from "react-router-dom";
 
-export default function RegisterPage({ onTogglePage }) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [roles, setRoles] = useState(["DRIVER", "PASSENGER"]);
+const initialState = {
+  name: "",
+  email: "",
+  phone: "",
+  password: "",
+  roles: ["DRIVER", "PASSENGER"],
+};
+
+export default function RegisterPage() {
+  const [formData, setFormData] = useState(initialState);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
   const handleRoleChange = (role) => {
-    if (roles.includes(role)) {
-      if (roles.length > 1) {
-        setRoles(roles.filter((r) => r !== role));
-      }
-    } else {
-      setRoles([...roles, role]);
-    }
+    setFormData((prev) => ({
+      ...prev,
+      roles: prev.roles.includes(role)
+        ? prev.roles.length > 1
+          ? prev.roles.filter((r) => r !== role)
+          : prev.roles
+        : [...prev.roles, role],
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -29,11 +45,14 @@ export default function RegisterPage({ onTogglePage }) {
     setError("");
 
     try {
+      const { name, email, phone, password, roles } = formData;
+
       const resp = await authAPI.register(name, email, phone, password, roles);
+
       console.log("Registration response:", resp);
       alert("Registration successful! Please login.");
 
-      //onRegisterSuccess();
+      setFormData(initialState);
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed.");
     } finally {
@@ -52,48 +71,48 @@ export default function RegisterPage({ onTogglePage }) {
         <form onSubmit={handleSubmit} className="register-form">
           <div className="form-group">
             <label>Full Name</label>
-
             <input
               type="text"
+              name="name"
               className="input-field"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={formData.name}
+              onChange={handleChange}
               required
             />
           </div>
 
           <div className="form-group">
             <label>Email</label>
-
             <input
               type="email"
+              name="email"
               className="input-field"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={formData.email}
+              onChange={handleChange}
               required
             />
           </div>
 
           <div className="form-group">
             <label>Phone</label>
-
             <input
               type="tel"
+              name="phone"
               className="input-field"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              value={formData.phone}
+              onChange={handleChange}
               required
             />
           </div>
 
           <div className="form-group">
             <label>Password</label>
-
             <input
               type="password"
+              name="password"
               className="input-field"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={formData.password}
+              onChange={handleChange}
               required
             />
           </div>
@@ -105,7 +124,7 @@ export default function RegisterPage({ onTogglePage }) {
               <label>
                 <input
                   type="checkbox"
-                  checked={roles.includes("DRIVER")}
+                  checked={formData.roles.includes("DRIVER")}
                   onChange={() => handleRoleChange("DRIVER")}
                 />
                 Driver
@@ -114,7 +133,7 @@ export default function RegisterPage({ onTogglePage }) {
               <label>
                 <input
                   type="checkbox"
-                  checked={roles.includes("PASSENGER")}
+                  checked={formData.roles.includes("PASSENGER")}
                   onChange={() => handleRoleChange("PASSENGER")}
                 />
                 Passenger
@@ -130,7 +149,8 @@ export default function RegisterPage({ onTogglePage }) {
         </form>
 
         <div className="register-footer">
-          Already have an account? <span onClick={onTogglePage}>Login</span>
+          Already have an account?{" "}
+          <span onClick={() => navigate("/login")}>Login</span>
         </div>
       </div>
     </div>

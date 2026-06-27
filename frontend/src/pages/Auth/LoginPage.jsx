@@ -4,7 +4,7 @@ import { authAPI } from "../../../api";
 import "./Login.scss";
 import useAuth from "../../context/AuthContext/useAuth";
 
-export default function LoginPage({ onTogglePage }) {
+export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { login } = useAuth();
@@ -72,7 +72,8 @@ export default function LoginPage({ onTogglePage }) {
         </form>
 
         <div className="login-footer">
-          Don't have an account? <span onClick={onTogglePage}>Register</span>
+          Don't have an account?{" "}
+          <span onClick={() => navigate("/register")}>Register</span>
         </div>
       </div>
     </div>
