@@ -18,8 +18,6 @@ function DriverDashboard() {
 
   return (
     <>
-      <div>DriverDashboard</div>
-
       <PublishRide onMapUpdate={handleMapUpdate} />
 
       {/* {showMap && (
