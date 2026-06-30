@@ -16,7 +16,6 @@ public class RideRequestService {
 
     private final RideRequestRepository rideRequestRepository;
 
-    // CREATE: Convert DTO to Model and save
     public RideRequest createRequest(RideRequestDto dto) {
         RideRequest request = new RideRequest();
 
@@ -27,7 +26,6 @@ public class RideRequestService {
         request.setDestination(dto.getDestination());
         request.setPassengerH3Segments(dto.getPassengerH3Segments());
 
-        // Defaults
         request.setStatus("PENDING");
         request.setCreatedAt(Instant.now());
         request.setPriorityScore(0.0);
@@ -35,17 +33,14 @@ public class RideRequestService {
         return rideRequestRepository.save(request);
     }
 
-    // READ: Get requests for a specific ride
     public List<RideRequest> getRequestsByRide(String rideId) {
         return rideRequestRepository.findByRideId(rideId);
     }
 
-    // READ: Get pending requests for a specific ride (Filtered)
     public List<RideRequest> getPendingRequestsByRide(String rideId) {
         return rideRequestRepository.findByRideIdAndStatus(rideId, "PENDING");
     }
 
-    // UPDATE: Update status (e.g., APPROVE or REJECT)
     public RideRequest updateStatus(String requestId, String status) {
         Optional<RideRequest> optionalRequest = rideRequestRepository.findById(requestId);
 
@@ -58,7 +53,6 @@ public class RideRequestService {
         }
     }
 
-    // READ: Get all requests for a specific user
     public List<RideRequest> getMyRequests(String passengerId) {
         return rideRequestRepository.findByPassengerId(passengerId);
     }

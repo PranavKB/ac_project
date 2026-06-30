@@ -19,11 +19,15 @@ public class RideRequestController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<Object>> createRequest(@RequestBody RideRequestDto dto) {
-        RideRequest saved = rideRequestService.createRequest(dto);
-        if (saved == null) {
-            return ApiResponse.error("Failed to create ride request. Please try again.");
+        try {
+            RideRequest saved = rideRequestService.createRequest(dto);
+            if (saved == null) {
+                return ApiResponse.error("Failed to create ride request. Please try again.");
+            }
+            return ApiResponse.success(saved, "Ride request created successfully");
+        } catch (Exception e) {
+            return ApiResponse.error("An error occurred while creating the request: " + e.getMessage());
         }
-        return ApiResponse.success(saved, "Ride request created successfully");
     }
 
     @PutMapping("/{id}/approve")
