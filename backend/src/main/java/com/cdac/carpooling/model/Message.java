@@ -19,6 +19,5 @@ public class Message {
     private String senderName;
     private String messageText;
     private Instant timestamp = Instant.now();
-    
 }
 

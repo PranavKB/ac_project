@@ -43,6 +43,18 @@ export const rideAPI = {
     const res = await API.post("/rides/search", searchData);
     return res.data;
   },
+  getByDriver: async (driverId) => {
+    const res = await API.get(`/rides/driver/${driverId}`);
+    return res.data;
+  },
+  get: async (id) => {
+    const res = await API.get(`/rides/${id}`);
+    return res.data;
+  },
+  updateStatus: async (id, status) => {
+    const res = await API.put(`/rides/${id}/status`, { status });
+    return res.data;
+  },
 };
 
 export const routeAPI = {
@@ -58,5 +70,43 @@ export const routeAPI = {
       ]);
     }
     return [];
+  },
+};
+
+export const requestAPI = {
+  create: async (reqData) => {
+    const res = await API.post("/requests", reqData);
+    return res.data;
+  },
+  approve: async (id) => {
+    const res = await API.put(`/requests/${id}/approve`);
+    return res.data;
+  },
+  reject: async (id) => {
+    const res = await API.put(`/requests/${id}/reject`);
+    return res.data;
+  },
+  cancel: async (id) => {
+    const res = await API.put(`/requests/${id}/cancel`);
+    return res.data;
+  },
+  getByRide: async (rideId) => {
+    const res = await API.get(`/requests/ride/${rideId}`);
+    return res.data;
+  },
+  getByPassenger: async (passengerId) => {
+    const res = await API.get(`/requests/passenger/${passengerId}`);
+    return res.data;
+  },
+};
+
+export const messageAPI = {
+  send: async (msgData) => {
+    const res = await API.post("/messages", msgData);
+    return res.data;
+  },
+  getByRide: async (rideId) => {
+    const res = await API.get(`/messages/ride/${rideId}`);
+    return res.data;
   },
 };
