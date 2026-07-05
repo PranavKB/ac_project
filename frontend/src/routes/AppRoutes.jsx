@@ -44,7 +44,23 @@ function AppRoutes() {
           path="/passenger"
           element={
             <ProtectedRoute allowedRoles={["PASSENGER"]}>
-              <PassengerDashboard />
+              <PassengerDashboard defaultView="all" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/passenger/search"
+          element={
+            <ProtectedRoute allowedRoles={["PASSENGER"]}>
+              <PassengerDashboard defaultView="search" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/passenger/bookings"
+          element={
+            <ProtectedRoute allowedRoles={["PASSENGER"]}>
+              <PassengerDashboard defaultView="bookings" />
             </ProtectedRoute>
           }
         />
