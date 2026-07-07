@@ -241,7 +241,7 @@ export default function DriverDashboard() {
               >
                 <div>
                   <h3 style={{ marginBottom: "0.5rem", fontSize: "1.4rem" }}>
-                    {selectedRide.source?.name.split(",")[0]} &rarr;{" "}
+                    {selectedRide.source?.name.split(",")[0]} to{" "}
                     {selectedRide.destination?.name.split(",")[0]}
                   </h3>
                   <div>
@@ -341,7 +341,7 @@ export default function DriverDashboard() {
                     <div className="card-info">
                       <span className="title">{req.passengerName}</span>
                       <span className="subtitle">
-                        {req.source?.name.split(",")[0]} &rarr;{" "}
+                        {req.source?.name.split(",")[0]} to{" "}
                         {req.destination?.name.split(",")[0]}
                       </span>
                       {req.status !== "PENDING" && (
@@ -410,7 +410,7 @@ export default function DriverDashboard() {
                   >
                     <div className="card-info">
                       <span className="title">
-                        {ride.source?.name.split(",")[0]} &rarr;{" "}
+                        {ride.source?.name.split(",")[0]} to{" "}
                         {ride.destination?.name.split(",")[0]}
                       </span>
                       <span className="subtitle">

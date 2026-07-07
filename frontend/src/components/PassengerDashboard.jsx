@@ -259,7 +259,7 @@ export default function PassengerDashboard({ defaultView = "all" }) {
                           </span>
                         </div>
                         <span className="subtitle" style={{ marginTop: "4px" }}>
-                          From: {booking.source?.name?.split(",")[0]} &rarr; To:{" "}
+                          {booking.source?.name?.split(",")[0]} to{" "}
                           {booking.destination?.name?.split(",")[0]}
                         </span>
                       </div>
@@ -396,8 +396,7 @@ export default function PassengerDashboard({ defaultView = "all" }) {
                         </span>
                       </div>
                       <span className="subtitle" style={{ marginTop: "4px" }}>
-                        From: {booking.source?.name} &rarr; To:{" "}
-                        {booking.destination?.name}
+                        {booking.source?.name} to: {booking.destination?.name}
                       </span>
                     </div>
                     <div className="card-actions">
