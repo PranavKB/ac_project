@@ -66,6 +66,7 @@ export default function LocationInput({ placeholder, onSelect }) {
             listStyle: "none",
             padding: 0,
             margin: 0,
+            color: "#000",
           }}
         >
           {results.map((item, i) => (

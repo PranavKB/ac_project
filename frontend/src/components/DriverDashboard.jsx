@@ -1,8 +1,8 @@
 /* eslint-disable max-lines-per-function */
 import { useState, useEffect } from "react";
 import useAuth from "../context/AuthContext/useAuth";
-import LocationInput from "./LocationInput";
 import MapComponent from "./MapComponent";
+import PublishRide from "./PublishRide";
 import { rideAPI, requestAPI, routeAPI } from "../../api";
 
 export default function DriverDashboard() {
@@ -14,16 +14,6 @@ export default function DriverDashboard() {
   const [rideRequests, setRideRequests] = useState([]);
   const [loadingRides, setLoadingRides] = useState(false);
   const [loadingRequests, setLoadingRequests] = useState(false);
-
-  // Form states
-  const [rideDetails, setRideDetails] = useState({
-    source: null,
-    destination: null,
-    totalSeats: 4,
-    departureTime: "",
-  });
-  const [isPreviewing, setIsPreviewing] = useState(false);
-  const [isPublishing, setIsPublishing] = useState(false);
 
   // Map state
   const [mapProps, setMapProps] = useState({
@@ -106,88 +96,6 @@ export default function DriverDashboard() {
       setRideRequests([]);
     }
   }, [selectedRide]);
-
-  const handlePreview = async () => {
-    const { source, destination } = rideDetails;
-    if (!source || !destination) {
-      alert("Please select both source and destination first.");
-      return;
-    }
-    setIsPreviewing(true);
-    try {
-      const routeCoords = await routeAPI.fetch(source, destination);
-      setMapProps({
-        source: [source.lat, source.lng],
-        destination: [destination.lat, destination.lng],
-        routeCoords,
-      });
-    } catch (err) {
-      console.error("Route preview failed:", err);
-    } finally {
-      setIsPreviewing(false);
-    }
-  };
-
-  const handlePublishTrip = async (e) => {
-    e.preventDefault();
-    const { source, destination, totalSeats, departureTime } = rideDetails;
-
-    if (!source || !destination || !departureTime) {
-      alert("Please fill out all required fields!");
-      return;
-    }
-
-    setIsPublishing(true);
-    try {
-      // NOTE: Storing as [lat, lng] inside coordinates to resolve the backend H3Service coordinate order bug
-      const requestBody = {
-        driverId: user.data.id,
-        driverName: user.data.name,
-        totalSeats: parseInt(totalSeats, 10) || 1,
-        departureTime: `${departureTime}:00Z`,
-        source: {
-          name: source.name,
-          location: {
-            type: "Point",
-            coordinates: [parseFloat(source.lat), parseFloat(source.lng)],
-          },
-        },
-        destination: {
-          name: destination.name,
-          location: {
-            type: "Point",
-            coordinates: [
-              parseFloat(destination.lat),
-              parseFloat(destination.lng),
-            ],
-          },
-        },
-      };
-
-      const response = await rideAPI.create(requestBody);
-      const newRide = response?.data || response;
-      alert("Ride published successfully!");
-
-      // Clear form
-      setRideDetails({
-        source: null,
-        destination: null,
-        totalSeats: 4,
-        departureTime: "",
-      });
-
-      // Reload rides list and set the new ride as selected active
-      await fetchDriverRides();
-      if (newRide?.id) {
-        setSelectedRide(newRide);
-      }
-    } catch (err) {
-      console.error("Failed to publish ride:", err);
-      alert("Failed to publish ride.");
-    } finally {
-      setIsPublishing(false);
-    }
-  };
 
   const handleStartTrip = async () => {
     if (!selectedRide) return;
@@ -296,102 +204,16 @@ export default function DriverDashboard() {
         <div className="dashboard-col">
           <div className="dashboard-card">
             <h2>Post Travel Route</h2>
-            <form onSubmit={handlePublishTrip}>
-              <div className="form-group">
-                <label>Source Address</label>
-                <LocationInput
-                  placeholder="Enter source location..."
-                  onSelect={(loc) =>
-                    setRideDetails((p) => ({ ...p, source: loc }))
-                  }
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Destination Address</label>
-                <LocationInput
-                  placeholder="Enter destination location..."
-                  onSelect={(loc) =>
-                    setRideDetails((p) => ({ ...p, destination: loc }))
-                  }
-                />
-              </div>
-
-              <div style={{ display: "flex", gap: "1rem" }}>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label>Seats Available</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="8"
-                    value={rideDetails.totalSeats}
-                    onChange={(e) =>
-                      setRideDetails((p) => ({
-                        ...p,
-                        totalSeats: parseInt(e.target.value, 10) || 1,
-                      }))
-                    }
-                  />
-                </div>
-                <div className="form-group" style={{ flex: 1.5 }}>
-                  <label>Departure Time</label>
-                  <input
-                    type="datetime-local"
-                    value={rideDetails.departureTime}
-                    onChange={(e) =>
-                      setRideDetails((p) => ({
-                        ...p,
-                        departureTime: e.target.value,
-                      }))
-                    }
-                    required
-                  />
-                </div>
-              </div>
-
-              <div
-                style={{ display: "flex", gap: "1rem", marginTop: "0.5rem" }}
-              >
-                <button
-                  type="button"
-                  className="nav-btn"
-                  onClick={handlePreview}
-                  disabled={
-                    !rideDetails.source ||
-                    !rideDetails.destination ||
-                    isPreviewing
-                  }
-                  style={{
-                    flex: 1,
-                    padding: "12px",
-                    background: "rgba(255, 255, 255, 0.05)",
-                    border: "1px solid #30363d",
-                    color: "#fff",
-                    borderRadius: "6px",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                >
-                  {isPreviewing ? "Loading Preview..." : "Preview Route"}
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPublishing}
-                  style={{
-                    flex: 1.2,
-                    padding: "12px",
-                    background: "#3b82f6",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "6px",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                >
-                  {isPublishing ? "Publishing..." : "Publish Trip"}
-                </button>
-              </div>
-            </form>
+            <PublishRide
+              isEmbed={true}
+              onPublishSuccess={async (newRide) => {
+                await fetchDriverRides();
+                if (newRide?.id) {
+                  setSelectedRide(newRide);
+                }
+              }}
+              onMapUpdate={(mapData) => setMapProps(mapData)}
+            />
           </div>
 
           {/* Map wrapper */}

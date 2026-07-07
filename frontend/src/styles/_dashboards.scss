@@ -1,5 +1,6 @@
 // Shared Dashboard Styles for Premium Dark and Light Themes
 @use "./variables" as *;
+@use "sass:color";
 
 // CSS Theme Variables
 :root {
@@ -40,9 +41,13 @@ $theme-red: #ef4444;
   color: var(--text-color);
   min-height: 100vh;
   padding: 2rem;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
   margin-top: 0;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 
   // View navigation tabs
   .dashboard-navigation {
@@ -127,9 +132,13 @@ $theme-red: #ef4444;
     border-radius: 12px;
     padding: 1.5rem;
     box-shadow: 0 4px 20px var(--shadow-color);
-    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    transition:
+      background-color 0.3s ease,
+      border-color 0.3s ease,
+      box-shadow 0.3s ease;
 
-    h3, h2 {
+    h3,
+    h2 {
       color: var(--card-header-color);
       font-size: 1.25rem;
       font-weight: 600;
@@ -159,7 +168,8 @@ $theme-red: #ef4444;
       letter-spacing: 0.5px;
     }
 
-    input, select {
+    input,
+    select {
       width: 100%;
       background-color: var(--input-bg);
       border: 1px solid var(--border-color);
@@ -186,7 +196,10 @@ $theme-red: #ef4444;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.3s ease;
+    transition:
+      transform 0.2s ease,
+      border-color 0.2s ease,
+      background-color 0.3s ease;
     margin-bottom: 1rem;
 
     &.clickable {
@@ -250,7 +263,7 @@ $theme-red: #ef4444;
     outline: none;
 
     &:hover {
-      background-color: darken($theme-blue, 10%);
+      background-color: color.scale($theme-blue, $lightness: -10%);
     }
 
     &:disabled {
@@ -292,7 +305,8 @@ $theme-red: #ef4444;
       background-color: rgba($theme-yellow, 0.15);
       color: $theme-yellow;
     }
-    &.approved, &.active {
+    &.approved,
+    &.active {
       background-color: rgba($theme-green, 0.15);
       color: $theme-green;
     }
@@ -300,7 +314,8 @@ $theme-red: #ef4444;
       background-color: rgba($theme-blue, 0.15);
       color: $theme-blue;
     }
-    &.rejected, &.cancelled {
+    &.rejected,
+    &.cancelled {
       background-color: rgba($theme-red, 0.15);
       color: $theme-red;
     }
@@ -330,7 +345,10 @@ $theme-red: #ef4444;
   border-bottom: 1px solid var(--navbar-border) !important;
   box-shadow: 0 4px 12px var(--shadow-color) !important;
   backdrop-filter: none !important;
-  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
 
   .navbar-left {
     .brand {
@@ -483,8 +501,8 @@ $theme-red: #ef4444;
       font-size: 0.85rem !important;
 
       &:hover {
-        background-color: darken(#ef4444, 8%) !important;
-        border-color: darken(#ef4444, 8%) !important;
+        background-color: color.scale(#ef4444, $lightness: -8%) !important;
+        border-color: color.scale(#ef4444, $lightness: -8%) !important;
       }
     }
   }

@@ -2,9 +2,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import useAuth from "../context/AuthContext/useAuth";
-import LocationInput from "./LocationInput";
 import MapComponent from "./MapComponent";
-import { rideAPI, requestAPI, routeAPI } from "../../api";
+import { requestAPI } from "../../api";
+import { SearchForm, RideMatchCard } from "./SearchRide";
 import "./PassengerDashboard.scss";
 
 export default function PassengerDashboard({ defaultView = "all" }) {
@@ -52,46 +52,6 @@ export default function PassengerDashboard({ defaultView = "all" }) {
     fetchBookings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
-
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    const { source, destination } = searchDetails;
-    if (!source || !destination) {
-      alert("Please select both source and destination locations!");
-      return;
-    }
-
-    setLoadingSearch(true);
-    setSearchError(null);
-    setSearchResults([]);
-
-    try {
-      const requestPayload = {
-        sourceCoords: [parseFloat(source.lat), parseFloat(source.lng)],
-        destinationCoords: [
-          parseFloat(destination.lat),
-          parseFloat(destination.lng),
-        ],
-      };
-
-      // Search rides
-      const response = await rideAPI.search(requestPayload);
-      const ridesArray = response?.data || response || [];
-      setSearchResults(ridesArray);
-
-      // Fetch route polyline for the map
-      const routeCoords = await routeAPI.fetch(source, destination);
-      setMapProps({
-        source: [source.lat, source.lng],
-        destination: [destination.lat, destination.lng],
-        routeCoords,
-      });
-    } catch (err) {
-      setSearchError(err.message || "Ride search failed.");
-    } finally {
-      setLoadingSearch(false);
-    }
-  };
 
   const handleBookRide = async (match) => {
     const { source, destination } = searchDetails;
@@ -187,49 +147,40 @@ export default function PassengerDashboard({ defaultView = "all" }) {
           <div className="dashboard-col">
             <div className="dashboard-card">
               <h2>Search Travel Opportunities</h2>
-              <form onSubmit={handleSearch}>
-                <div className="form-group">
-                  <label>Origin</label>
-                  <LocationInput
-                    placeholder="Enter origin address..."
-                    onSelect={(loc) =>
-                      setSearchDetails((prev) => ({ ...prev, source: loc }))
-                    }
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Destination</label>
-                  <LocationInput
-                    placeholder="Enter destination address..."
-                    onSelect={(loc) =>
-                      setSearchDetails((prev) => ({
-                        ...prev,
-                        destination: loc,
-                      }))
-                    }
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={loadingSearch}
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    background: "#3b82f6",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "6px",
-                    fontWeight: 600,
-                    cursor: loadingSearch ? "not-allowed" : "pointer",
-                    opacity: loadingSearch ? 0.7 : 1,
-                    transition: "background-color 0.2s ease",
-                  }}
-                >
-                  {loadingSearch
-                    ? "Searching Matching Rides..."
-                    : "Search Matching Rides"}
-                </button>
-              </form>
+              <SearchForm
+                loading={loadingSearch}
+                onSearchStart={() => {
+                  setLoadingSearch(true);
+                  setSearchError(null);
+                  setSearchResults([]);
+                }}
+                onSearchSuccess={({
+                  searchDetails,
+                  searchResults,
+                  routeCoords,
+                }) => {
+                  setSearchDetails(searchDetails);
+                  setSearchResults(searchResults);
+                  setLoadingSearch(false);
+                  if (routeCoords) {
+                    setMapProps({
+                      source: [
+                        searchDetails.source.lat,
+                        searchDetails.source.lng,
+                      ],
+                      destination: [
+                        searchDetails.destination.lat,
+                        searchDetails.destination.lng,
+                      ],
+                      routeCoords,
+                    });
+                  }
+                }}
+                onSearchError={(err) => {
+                  setSearchError(err);
+                  setLoadingSearch(false);
+                }}
+              />
               {searchError && (
                 <p
                   style={{
@@ -261,34 +212,12 @@ export default function PassengerDashboard({ defaultView = "all" }) {
               {searchResults.length > 0 ? (
                 <div>
                   {searchResults.map((match, idx) => (
-                    <div key={idx} className="list-card">
-                      <div className="card-info">
-                        <span className="title">
-                          Driver: {match.ride?.driverName || "Driver"}
-                        </span>
-                        <span className="subtitle">
-                          Seats Left: {match.ride?.availableSeats}
-                        </span>
-                        <span className="badge-text">
-                          {Math.round((match.similarityScore || 0) * 100)}%
-                          Route Overlap
-                        </span>
-                      </div>
-                      <div className="card-actions">
-                        <button
-                          className="book-btn"
-                          disabled={
-                            bookingInProgressId === match.ride?.id ||
-                            match.ride?.availableSeats <= 0
-                          }
-                          onClick={() => handleBookRide(match)}
-                        >
-                          {bookingInProgressId === match.ride?.id
-                            ? "Booking..."
-                            : "Book Ride"}
-                        </button>
-                      </div>
-                    </div>
+                    <RideMatchCard
+                      key={idx}
+                      match={match}
+                      bookingInProgress={bookingInProgressId === match.ride?.id}
+                      onBook={handleBookRide}
+                    />
                   ))}
                 </div>
               ) : (
@@ -361,46 +290,40 @@ export default function PassengerDashboard({ defaultView = "all" }) {
         <div className="dashboard-focus-two-col">
           <div className="dashboard-card">
             <h2>Search Travel Opportunities</h2>
-            <form onSubmit={handleSearch}>
-              <div className="form-group">
-                <label>Origin</label>
-                <LocationInput
-                  placeholder="Enter origin address..."
-                  onSelect={(loc) =>
-                    setSearchDetails((prev) => ({ ...prev, source: loc }))
-                  }
-                />
-              </div>
-              <div className="form-group">
-                <label>Destination</label>
-                <LocationInput
-                  placeholder="Enter destination address..."
-                  onSelect={(loc) =>
-                    setSearchDetails((prev) => ({ ...prev, destination: loc }))
-                  }
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={loadingSearch}
-                style={{
-                  width: "100%",
-                  padding: "12px",
-                  background: "#3b82f6",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "6px",
-                  fontWeight: 600,
-                  cursor: loadingSearch ? "not-allowed" : "pointer",
-                  opacity: loadingSearch ? 0.7 : 1,
-                  transition: "background-color 0.2s ease",
-                }}
-              >
-                {loadingSearch
-                  ? "Searching Matching Rides..."
-                  : "Search Matching Rides"}
-              </button>
-            </form>
+            <SearchForm
+              loading={loadingSearch}
+              onSearchStart={() => {
+                setLoadingSearch(true);
+                setSearchError(null);
+                setSearchResults([]);
+              }}
+              onSearchSuccess={({
+                searchDetails,
+                searchResults,
+                routeCoords,
+              }) => {
+                setSearchDetails(searchDetails);
+                setSearchResults(searchResults);
+                setLoadingSearch(false);
+                if (routeCoords) {
+                  setMapProps({
+                    source: [
+                      searchDetails.source.lat,
+                      searchDetails.source.lng,
+                    ],
+                    destination: [
+                      searchDetails.destination.lat,
+                      searchDetails.destination.lng,
+                    ],
+                    routeCoords,
+                  });
+                }
+              }}
+              onSearchError={(err) => {
+                setSearchError(err);
+                setLoadingSearch(false);
+              }}
+            />
             {searchError && (
               <p
                 style={{
@@ -418,34 +341,12 @@ export default function PassengerDashboard({ defaultView = "all" }) {
                 <h3>Compatible Matches (Similarity &gt;= 70%)</h3>
                 <div>
                   {searchResults.map((match, idx) => (
-                    <div key={idx} className="list-card">
-                      <div className="card-info">
-                        <span className="title">
-                          Driver: {match.ride?.driverName || "Driver"}
-                        </span>
-                        <span className="subtitle">
-                          Seats Left: {match.ride?.availableSeats}
-                        </span>
-                        <span className="badge-text">
-                          {Math.round((match.similarityScore || 0) * 100)}%
-                          Route Overlap
-                        </span>
-                      </div>
-                      <div className="card-actions">
-                        <button
-                          className="book-btn"
-                          disabled={
-                            bookingInProgressId === match.ride?.id ||
-                            match.ride?.availableSeats <= 0
-                          }
-                          onClick={() => handleBookRide(match)}
-                        >
-                          {bookingInProgressId === match.ride?.id
-                            ? "Booking..."
-                            : "Book Ride"}
-                        </button>
-                      </div>
-                    </div>
+                    <RideMatchCard
+                      key={idx}
+                      match={match}
+                      bookingInProgress={bookingInProgressId === match.ride?.id}
+                      onBook={handleBookRide}
+                    />
                   ))}
                 </div>
               </div>
