@@ -68,13 +68,7 @@ function AppRoutes() {
           path="/admin"
           element={
             <ProtectedRoute allowedRoles={["ADMIN"]}>
-              <div
-                style={{
-                  padding: "2rem",
-                  textAlign: "center",
-                  marginTop: "2rem",
-                }}
-              >
+              <div className="admin-temp-panel">
                 <h2>Admin Dashboard</h2>
                 <p>Welcome, Administrator.</p>
               </div>

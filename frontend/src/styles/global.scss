@@ -1,8 +1,12 @@
+// Entry point — imports order matters (theme vars first)
+@use "./theme";
 @use "./variables" as *;
 @use "./typography";
 @use "./buttons";
 @use "./cards";
+@use "./forms";
 @use "./dashboards";
+@use "./navbar";
 
 * {
   margin: 0;
@@ -16,4 +20,10 @@ a {
 
 ul {
   list-style: none;
+}
+
+.admin-temp-panel {
+  padding: 2rem;
+  text-align: center;
+  margin-top: 2rem;
 }

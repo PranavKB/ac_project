@@ -4,18 +4,17 @@ import useAuth from "../context/AuthContext/useAuth";
 import MapComponent from "./MapComponent";
 import PublishRide from "./PublishRide";
 import { rideAPI, requestAPI, routeAPI } from "../../api";
+import { PlayIcon } from "./icons";
 
 export default function DriverDashboard() {
   const { user } = useAuth();
 
-  // Posted rides list and active selected ride
   const [postedRides, setPostedRides] = useState([]);
   const [selectedRide, setSelectedRide] = useState(null);
   const [rideRequests, setRideRequests] = useState([]);
   const [loadingRides, setLoadingRides] = useState(false);
   const [loadingRequests, setLoadingRequests] = useState(false);
 
-  // Map state
   const [mapProps, setMapProps] = useState({
     source: null,
     destination: null,
@@ -100,14 +99,8 @@ export default function DriverDashboard() {
   const handleStartTrip = async () => {
     if (!selectedRide) return;
     try {
-      const response = await fetch(
-        `http://localhost:8080/api/rides/${selectedRide.id}/start`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-      const result = await response.json();
+      const result = await rideAPI.start(selectedRide.id);
+
       if (result.status === "SUCCESS") {
         alert("Trip started! Status is now ONGOING.");
         fetchDriverRides();
@@ -123,15 +116,9 @@ export default function DriverDashboard() {
   const handleCompleteTrip = async () => {
     if (!selectedRide) return;
     try {
-      const response = await fetch(
-        `http://localhost:8080/api/rides/${selectedRide.id}/complete`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ actualDistanceKm: 10.0 }),
-        },
-      );
-      const result = await response.json();
+      // 10.0 km for demonstration
+      const result = await rideAPI.complete(selectedRide.id, 10.0);
+
       if (result.status === "SUCCESS") {
         alert(
           "Trip completed successfully! Avoided fuel and carbon footprint computed.",
@@ -152,7 +139,8 @@ export default function DriverDashboard() {
       alert("Rider request approved!");
       if (selectedRide?.id) {
         fetchRideRequests(selectedRide.id);
-        fetchDriverRides(); // Reload seats left count
+        // Reload seats left count
+        fetchDriverRides();
       }
     } catch (err) {
       console.error("Failed to accept request:", err);
@@ -216,7 +204,6 @@ export default function DriverDashboard() {
             />
           </div>
 
-          {/* Map wrapper */}
           <div className="map-wrapper">
             <MapComponent
               source={mapProps.source}
@@ -229,18 +216,12 @@ export default function DriverDashboard() {
 
         {/* Column 2: Trip Actions */}
         <div className="dashboard-col">
-          <div className="dashboard-card" style={{ minHeight: "600px" }}>
+          <div className="dashboard-card card-tall">
             <h2>Trip Actions</h2>
             {selectedRide ? (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "1.5rem",
-                }}
-              >
+              <div className="trip-actions-wrapper">
                 <div>
-                  <h3 style={{ marginBottom: "0.5rem", fontSize: "1.4rem" }}>
+                  <h3 className="trip-actions-title">
                     {selectedRide.source?.name.split(",")[0]} to{" "}
                     {selectedRide.destination?.name.split(",")[0]}
                   </h3>
@@ -256,60 +237,25 @@ export default function DriverDashboard() {
                 {selectedRide.status === "ACTIVE" && (
                   <button
                     onClick={handleStartTrip}
-                    style={{
-                      width: "100%",
-                      padding: "14px",
-                      background: "#10b981",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: "6px",
-                      fontSize: "1.05rem",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "0.5rem",
-                    }}
+                    className="btn-db-action success tall w-full"
                   >
-                    <span>&#9654;</span> Start Trip
+                    <PlayIcon /> Start Trip
                   </button>
                 )}
 
                 {selectedRide.status === "ONGOING" && (
                   <button
                     onClick={handleCompleteTrip}
-                    style={{
-                      width: "100%",
-                      padding: "14px",
-                      background: "#ef4444",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: "6px",
-                      fontSize: "1.05rem",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                    }}
+                    className="btn-db-action danger tall w-full"
                   >
                     Complete Trip
                   </button>
                 )}
 
                 {selectedRide.status === "COMPLETED" && (
-                  <div
-                    style={{
-                      background: "rgba(16, 185, 129, 0.1)",
-                      border: "1px solid rgba(16, 185, 129, 0.2)",
-                      padding: "1.5rem",
-                      borderRadius: "8px",
-                      color: "#10b981",
-                      textAlign: "center",
-                    }}
-                  >
-                    <h4 style={{ fontWeight: 700, marginBottom: "0.5rem" }}>
-                      Trip Completed Successfully!
-                    </h4>
-                    <p style={{ fontSize: "0.9rem", color: "#8b949e" }}>
+                  <div className="trip-success-box">
+                    <h4>Trip Completed Successfully!</h4>
+                    <p>
                       Co2 offset avoided:{" "}
                       {selectedRide.executionDetails?.environmentalOffset?.netReducedCo2Kg?.toFixed(
                         2,
@@ -330,7 +276,7 @@ export default function DriverDashboard() {
         {/* Column 3: Riders Queue & Posted Routes */}
         <div className="dashboard-col">
           {/* Card 3a: Riders Queue */}
-          <div className="dashboard-card" style={{ minHeight: "300px" }}>
+          <div className="dashboard-card card-riders-queue">
             <h2>Riders Queue</h2>
             {loadingRequests ? (
               <p className="empty-text">Loading queue...</p>
@@ -347,7 +293,6 @@ export default function DriverDashboard() {
                       {req.status !== "PENDING" && (
                         <span
                           className={`status-badge ${req.status?.toLowerCase()}`}
-                          style={{ marginTop: "4px" }}
                         >
                           {req.status}
                         </span>
@@ -357,31 +302,13 @@ export default function DriverDashboard() {
                       <div className="card-actions">
                         <button
                           onClick={() => handleAcceptRequest(req.id)}
-                          style={{
-                            background: "#10b981",
-                            color: "#fff",
-                            border: "none",
-                            padding: "6px 12px",
-                            borderRadius: "4px",
-                            fontSize: "0.8rem",
-                            fontWeight: 700,
-                            cursor: "pointer",
-                          }}
+                          className="btn-db-action success small"
                         >
                           Accept
                         </button>
                         <button
                           onClick={() => handleRejectRequest(req.id)}
-                          style={{
-                            background: "#ef4444",
-                            color: "#fff",
-                            border: "none",
-                            padding: "6px 12px",
-                            borderRadius: "4px",
-                            fontSize: "0.8rem",
-                            fontWeight: 700,
-                            cursor: "pointer",
-                          }}
+                          className="btn-db-action danger small"
                         >
                           Reject
                         </button>
@@ -396,12 +323,12 @@ export default function DriverDashboard() {
           </div>
 
           {/* Card 3b: Posted Routes */}
-          <div className="dashboard-card" style={{ minHeight: "275px" }}>
+          <div className="dashboard-card card-posted-routes">
             <h2>Posted Routes</h2>
             {loadingRides ? (
               <p className="empty-text">Loading posted routes...</p>
             ) : postedRides.length > 0 ? (
-              <div style={{ maxHeight: "250px", overflowY: "auto" }}>
+              <div className="scroll-container">
                 {postedRides.map((ride) => (
                   <div
                     key={ride.id}

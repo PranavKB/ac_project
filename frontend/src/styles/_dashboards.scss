@@ -1,40 +1,6 @@
-// Shared Dashboard Styles for Premium Dark and Light Themes
-@use "./variables" as *;
+// Dashboard Layout — Grid, navigation tabs, cards, and map/trip helpers
+@use "./theme" as *;
 @use "sass:color";
-
-// CSS Theme Variables
-:root {
-  // Default is Dark Theme
-  --bg-color: #090d16;
-  --surface-color: #131924;
-  --border-color: #30363d;
-  --text-color: #c9d1d9;
-  --text-muted: #8b949e;
-  --navbar-bg: #0d1117;
-  --navbar-border: #21262d;
-  --card-header-color: #ffffff;
-  --input-bg: #090d16;
-  --shadow-color: rgba(0, 0, 0, 0.4);
-}
-
-[data-theme="light"] {
-  --bg-color: #f8fafc;
-  --surface-color: #ffffff;
-  --border-color: #cbd5e1;
-  --text-color: #0f172a;
-  --text-muted: #64748b;
-  --navbar-bg: #ffffff;
-  --navbar-border: #cbd5e1;
-  --card-header-color: #0f172a;
-  --input-bg: #f1f5f9;
-  --shadow-color: rgba(0, 0, 0, 0.06);
-}
-
-// Global colors
-$theme-blue: #3b82f6;
-$theme-green: #10b981;
-$theme-yellow: #f59e0b;
-$theme-red: #ef4444;
 
 .dashboard-theme {
   background-color: var(--bg-color);
@@ -49,7 +15,7 @@ $theme-red: #ef4444;
     background-color 0.3s ease,
     color 0.3s ease;
 
-  // View navigation tabs
+  // ── View Navigation Tabs ──
   .dashboard-navigation {
     display: flex;
     gap: 1rem;
@@ -66,17 +32,12 @@ $theme-red: #ef4444;
       cursor: pointer;
       transition: all 0.2s ease;
 
-      [data-theme="light"] & {
-        background-color: rgba(0, 0, 0, 0.03);
-      }
+      [data-theme="light"] & { background-color: rgba(0, 0, 0, 0.03); }
 
       &:hover {
         background-color: rgba(255, 255, 255, 0.1);
         color: var(--card-header-color);
-
-        [data-theme="light"] & {
-          background-color: rgba(0, 0, 0, 0.06);
-        }
+        [data-theme="light"] & { background-color: rgba(0, 0, 0, 0.06); }
       }
 
       &.active {
@@ -87,31 +48,23 @@ $theme-red: #ef4444;
     }
   }
 
-  // 3-column layout grid
+  // ── Layout Grids ──
   .dashboard-grid {
     display: grid;
     grid-template-columns: 35% 34% 28%;
     gap: 1.5rem;
     align-items: start;
 
-    @media (max-width: 1200px) {
-      grid-template-columns: 1fr 1fr;
-    }
-
-    @media (max-width: 768px) {
-      grid-template-columns: 1fr;
-    }
+    @media (max-width: 1200px) { grid-template-columns: 1fr 1fr; }
+    @media (max-width: 768px)  { grid-template-columns: 1fr; }
   }
 
-  // Focus layouts
   .dashboard-focus-two-col {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
 
-    @media (max-width: 900px) {
-      grid-template-columns: 1fr;
-    }
+    @media (max-width: 900px) { grid-template-columns: 1fr; }
   }
 
   .dashboard-focus-one-col {
@@ -125,7 +78,7 @@ $theme-red: #ef4444;
     gap: 1.5rem;
   }
 
-  // Premium Cards
+  // ── Premium Dashboard Card ──
   .dashboard-card {
     background-color: var(--surface-color);
     border: 1px solid var(--border-color);
@@ -137,8 +90,7 @@ $theme-red: #ef4444;
       border-color 0.3s ease,
       box-shadow 0.3s ease;
 
-    h3,
-    h2 {
+    h2, h3 {
       color: var(--card-header-color);
       font-size: 1.25rem;
       font-weight: 600;
@@ -152,358 +104,75 @@ $theme-red: #ef4444;
       text-align: center;
       padding: 2rem 0;
     }
+
+    // Card height variants
+    &.card-tall          { min-height: 600px; }
+    &.card-riders-queue  { min-height: 300px; }
+    &.card-posted-routes { min-height: 275px; }
   }
 
-  // Inputs and forms
-  .form-group {
-    margin-bottom: 1.25rem;
-
-    label {
-      display: block;
-      color: var(--text-muted);
-      margin-bottom: 0.5rem;
-      font-size: 0.85rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    input,
-    select {
-      width: 100%;
-      background-color: var(--input-bg);
-      border: 1px solid var(--border-color);
-      color: var(--card-header-color);
-      padding: 0.75rem 1rem;
-      border-radius: 6px;
-      font-size: 0.95rem;
-      transition: all 0.2s ease;
-      outline: none;
-
-      &:focus {
-        border-color: $theme-blue;
-        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
-      }
-    }
-  }
-
-  // Generic List item card (Matches, Bookings, Queues, Routes)
-  .list-card {
-    background-color: var(--input-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition:
-      transform 0.2s ease,
-      border-color 0.2s ease,
-      background-color 0.3s ease;
-    margin-bottom: 1rem;
-
-    &.clickable {
-      cursor: pointer;
-      &:hover {
-        border-color: rgba($theme-blue, 0.5);
-      }
-    }
-
-    &.active-route {
-      border-color: $theme-blue;
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
-    }
-
-    &:hover {
-      border-color: rgba($theme-blue, 0.3);
-      transform: translateY(-1px);
-    }
-
-    .card-info {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-
-      .title {
-        font-weight: 600;
-        color: var(--card-header-color);
-        font-size: 0.95rem;
-      }
-
-      .subtitle {
-        font-size: 0.85rem;
-        color: var(--text-muted);
-      }
-
-      .badge-text {
-        color: $theme-green;
-        font-weight: 600;
-        font-size: 0.85rem;
-      }
-    }
-
-    .card-actions {
-      display: flex;
-      gap: 0.5rem;
-      align-items: center;
-    }
-  }
-
-  // Buttons inside lists
-  .book-btn {
-    background-color: $theme-blue;
-    color: #fff;
-    border: none;
-    padding: 0.5rem 1.2rem;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    outline: none;
-
-    &:hover {
-      background-color: color.scale($theme-blue, $lightness: -10%);
-    }
-
-    &:disabled {
-      background-color: var(--border-color);
-      color: var(--text-muted);
-      cursor: not-allowed;
-    }
-  }
-
-  .cancel-btn {
-    background-color: transparent;
-    border: 1px solid rgba($theme-red, 0.4);
-    color: $theme-red;
-    padding: 0.35rem 0.75rem;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    outline: none;
-
-    &:hover {
-      background-color: $theme-red;
-      color: #fff;
-      border-color: $theme-red;
-    }
-  }
-
-  // Status badges
-  .status-badge {
-    font-size: 0.75rem;
-    font-weight: 700;
-    padding: 0.25rem 0.6rem;
-    border-radius: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-
-    &.pending {
-      background-color: rgba($theme-yellow, 0.15);
-      color: $theme-yellow;
-    }
-    &.approved,
-    &.active {
-      background-color: rgba($theme-green, 0.15);
-      color: $theme-green;
-    }
-    &.ongoing {
-      background-color: rgba($theme-blue, 0.15);
-      color: $theme-blue;
-    }
-    &.rejected,
-    &.cancelled {
-      background-color: rgba($theme-red, 0.15);
-      color: $theme-red;
-    }
-    &.completed {
-      background-color: rgba(0, 0, 0, 0.08);
-      color: var(--text-muted);
-
-      [data-theme="light"] & {
-        background-color: rgba(0, 0, 0, 0.05);
-      }
-    }
-  }
-
-  // Map wrappers
+  // ── Map Wrappers ──
   .map-wrapper {
     height: 450px;
     border: 1px solid var(--border-color);
     border-radius: 12px;
     overflow: hidden;
     background-color: var(--surface-color);
-  }
-}
 
-// Global Navbar custom styles for passenger and driver themes
-.navbar.passenger-theme {
-  background-color: var(--navbar-bg) !important;
-  border-bottom: 1px solid var(--navbar-border) !important;
-  box-shadow: 0 4px 12px var(--shadow-color) !important;
-  backdrop-filter: none !important;
-  transition:
-    background-color 0.3s ease,
-    border-color 0.3s ease,
-    box-shadow 0.3s ease;
-
-  .navbar-left {
-    .brand {
-      color: var(--card-header-color) !important;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-
-    .role-badge {
-      background-color: rgba(59, 130, 246, 0.15) !important;
-      color: #60a5fa !important;
-      font-size: 0.75rem !important;
-      font-weight: 700 !important;
-      border: 1px solid rgba(59, 130, 246, 0.3);
-      text-transform: uppercase;
-      padding: 0.25rem 0.5rem !important;
-    }
+    &.map-tall { height: 600px; }
   }
 
-  // Right section of the header
-  .navbar-right {
+  .map-container-wrapper {
+    height: 100%;
+    width: 100%;
+    min-height: 400px;
+    position: relative;
+  }
+
+  .map-container-inner {
+    height: 100%;
+    width: 100%;
+    border-radius: 12px;
+  }
+
+  // ── Trip Actions ──
+  .trip-actions-wrapper {
     display: flex;
-    align-items: center;
-    gap: 1rem;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
 
-    .passenger-nav-badges {
-      display: flex;
-      gap: 0.75rem;
-      align-items: center;
+  .trip-actions-title {
+    margin-bottom: 0.5rem;
+    font-size: 1.4rem;
+  }
 
-      .co2-badge {
-        background-color: rgba(16, 185, 129, 0.1) !important;
-        color: #10b981 !important;
-        border: 1px solid rgba(16, 185, 129, 0.2);
-        padding: 0.4rem 0.8rem;
-        border-radius: 6px;
-        font-size: 0.85rem;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        gap: 0.4rem;
+  .scroll-container {
+    max-height: 250px;
+    overflow-y: auto;
+  }
 
-        svg {
-          fill: currentColor;
-          width: 14px;
-          height: 14px;
-        }
-      }
+  // ── Ride/Search layout helpers ──
+  .publish-ride-card {
+    max-width: 500px;
+    margin: 40px auto;
+    padding: 20px;
+  }
 
-      .rating-badge {
-        background-color: rgba(245, 158, 11, 0.1) !important;
-        color: #f59e0b !important;
-        border: 1px solid rgba(245, 158, 11, 0.2);
-        padding: 0.4rem 0.8rem;
-        border-radius: 6px;
-        font-size: 0.85rem;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        gap: 0.4rem;
+  .search-ride-container { padding: 40px 20px; }
+  .search-form-card      { margin-bottom: 20px; }
 
-        svg {
-          fill: currentColor;
-          width: 14px;
-          height: 14px;
-        }
-      }
-    }
+  // ── Matches Section ──
+  .matches-wrapper { margin-top: 2rem; }
 
-    .greeting {
-      color: var(--text-muted) !important;
-      font-size: 0.9rem !important;
+  .matches-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
 
-      strong {
-        color: var(--card-header-color) !important;
-        font-weight: 700;
-      }
-    }
-
-    // Theme toggle button
-    .theme-toggle-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      padding: 0.4rem;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-
-      &:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-        color: var(--card-header-color);
-
-        [data-theme="light"] & {
-          background-color: rgba(0, 0, 0, 0.05);
-        }
-      }
-
-      svg {
-        fill: currentColor;
-        width: 18px;
-        height: 18px;
-      }
-    }
-
-    // Role switcher button (Switch to Driver/Passenger)
-    .switch-role-btn {
-      background-color: rgba(255, 255, 255, 0.1);
-      color: var(--card-header-color);
-      border: 1px solid var(--border-color);
-      padding: 0.45rem 1rem;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      transition: all 0.2s ease;
-
-      [data-theme="light"] & {
-        background-color: rgba(0, 0, 0, 0.03);
-      }
-
-      &:hover {
-        background-color: rgba(255, 255, 255, 0.15);
-        border-color: rgba(255, 255, 255, 0.25);
-
-        [data-theme="light"] & {
-          background-color: rgba(0, 0, 0, 0.06);
-        }
-      }
-
-      svg {
-        fill: currentColor;
-        width: 14px;
-        height: 14px;
-      }
-    }
-
-    .logout-btn {
-      background-color: #ef4444 !important;
-      border: 1px solid #ef4444 !important;
-      color: #fff !important;
-      padding: 0.45rem 1.2rem !important;
-      border-radius: 6px !important;
-      font-weight: 600 !important;
-      font-size: 0.85rem !important;
-
-      &:hover {
-        background-color: color.scale(#ef4444, $lightness: -8%) !important;
-        border-color: color.scale(#ef4444, $lightness: -8%) !important;
-      }
-    }
+  .matches-title {
+    margin-top: 0;
+    margin-bottom: 15px;
   }
 }

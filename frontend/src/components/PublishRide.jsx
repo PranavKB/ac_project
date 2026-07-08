@@ -43,8 +43,8 @@ function RideForm({
         />
       </div>
 
-      <div style={{ display: "flex", gap: "1rem" }}>
-        <div className="form-group" style={{ flex: 1 }}>
+      <div className="form-row">
+        <div className="form-group flex-1">
           <label>Seats Available</label>
           <input
             type="number"
@@ -59,7 +59,7 @@ function RideForm({
             }
           />
         </div>
-        <div className="form-group" style={{ flex: 1.5 }}>
+        <div className="form-group flex-1-5">
           <label>Departure Time</label>
           <input
             type="datetime-local"
@@ -75,41 +75,21 @@ function RideForm({
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: "1rem", marginTop: "0.5rem" }}>
+      <div className="form-actions-row">
         <button
           type="button"
-          className="nav-btn"
+          className="btn-db-action outline flex-1"
           onClick={handlePreview}
           disabled={
             !rideDetails.source || !rideDetails.destination || isPreviewing
           }
-          style={{
-            flex: 1,
-            padding: "12px",
-            border: "1px solid #30363d",
-            borderRadius: "6px",
-            fontWeight: 600,
-            cursor:
-              !rideDetails.source || !rideDetails.destination
-                ? "not-allowed"
-                : "pointer",
-          }}
         >
           {isPreviewing ? "Loading Preview..." : "Preview Route"}
         </button>
         <button
           type="submit"
           disabled={isPublishing}
-          style={{
-            flex: 1.2,
-            padding: "12px",
-            background: "#3b82f6",
-            color: "#fff",
-            border: "none",
-            borderRadius: "6px",
-            fontWeight: 600,
-            cursor: isPublishing ? "not-allowed" : "pointer",
-          }}
+          className="btn-db-action primary flex-1-2"
         >
           {isPublishing ? "Publishing..." : "Publish Trip"}
         </button>
@@ -223,14 +203,7 @@ export default function PublishRide({
   }
 
   return (
-    <div
-      className="dashboard-theme"
-      style={{
-        maxWidth: "500px",
-        margin: "40px auto",
-        padding: "20px",
-      }}
-    >
+    <div className="dashboard-theme publish-ride-card">
       <div className="dashboard-card">
         <h2>Publish a Ride</h2>
         {formContent}

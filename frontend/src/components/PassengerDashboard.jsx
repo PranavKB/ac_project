@@ -181,17 +181,7 @@ export default function PassengerDashboard({ defaultView = "all" }) {
                   setLoadingSearch(false);
                 }}
               />
-              {searchError && (
-                <p
-                  style={{
-                    color: "#ef4444",
-                    marginTop: "12px",
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  {searchError}
-                </p>
-              )}
+              {searchError && <p className="error-message">{searchError}</p>}
             </div>
 
             {/* Map */}
@@ -207,7 +197,7 @@ export default function PassengerDashboard({ defaultView = "all" }) {
 
           {/* Column 2: Compatible Matches */}
           <div className="dashboard-col">
-            <div className="dashboard-card" style={{ minHeight: "600px" }}>
+            <div className="dashboard-card card-tall">
               <h2>Compatible Matches (Similarity &gt;= 70%)</h2>
               {searchResults.length > 0 ? (
                 <div>
@@ -230,7 +220,7 @@ export default function PassengerDashboard({ defaultView = "all" }) {
 
           {/* Column 3: Booking Records */}
           <div className="dashboard-col">
-            <div className="dashboard-card" style={{ minHeight: "600px" }}>
+            <div className="dashboard-card card-tall">
               <h2>Booking Records</h2>
               {loadingBookings ? (
                 <p className="empty-text">Loading booking records...</p>
@@ -239,13 +229,7 @@ export default function PassengerDashboard({ defaultView = "all" }) {
                   {bookings.map((booking) => (
                     <div key={booking.id} className="list-card">
                       <div className="card-info">
-                        <div
-                          style={{
-                            display: "flex",
-                            gap: "10px",
-                            alignItems: "center",
-                          }}
-                        >
+                        <div className="booking-header">
                           <span className="title">
                             Ride with{" "}
                             {booking.passengerName === user.data.name
@@ -258,7 +242,7 @@ export default function PassengerDashboard({ defaultView = "all" }) {
                             {booking.status}
                           </span>
                         </div>
-                        <span className="subtitle" style={{ marginTop: "4px" }}>
+                        <span className="subtitle">
                           {booking.source?.name?.split(",")[0]} to{" "}
                           {booking.destination?.name?.split(",")[0]}
                         </span>
@@ -324,20 +308,10 @@ export default function PassengerDashboard({ defaultView = "all" }) {
                 setLoadingSearch(false);
               }}
             />
-            {searchError && (
-              <p
-                style={{
-                  color: "#ef4444",
-                  marginTop: "12px",
-                  fontSize: "0.9rem",
-                }}
-              >
-                {searchError}
-              </p>
-            )}
+            {searchError && <p className="error-message">{searchError}</p>}
 
             {searchResults.length > 0 && (
-              <div style={{ marginTop: "2rem" }}>
+              <div className="matches-wrapper">
                 <h3>Compatible Matches (Similarity &gt;= 70%)</h3>
                 <div>
                   {searchResults.map((match, idx) => (
@@ -353,7 +327,7 @@ export default function PassengerDashboard({ defaultView = "all" }) {
             )}
           </div>
 
-          <div className="map-wrapper" style={{ height: "600px" }}>
+          <div className="map-wrapper map-tall">
             <MapComponent
               source={mapProps.source}
               destination={mapProps.destination}
@@ -376,13 +350,7 @@ export default function PassengerDashboard({ defaultView = "all" }) {
                 {bookings.map((booking) => (
                   <div key={booking.id} className="list-card">
                     <div className="card-info">
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "10px",
-                          alignItems: "center",
-                        }}
-                      >
+                      <div className="booking-header">
                         <span className="title">
                           Ride with{" "}
                           {booking.passengerName === user.data.name
@@ -395,7 +363,7 @@ export default function PassengerDashboard({ defaultView = "all" }) {
                           {booking.status}
                         </span>
                       </div>
-                      <span className="subtitle" style={{ marginTop: "4px" }}>
+                      <span className="subtitle">
                         {booking.source?.name} to: {booking.destination?.name}
                       </span>
                     </div>

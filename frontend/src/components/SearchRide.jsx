@@ -118,18 +118,7 @@ export function SearchForm({
       <button
         type="submit"
         disabled={isLoading}
-        style={{
-          width: "100%",
-          padding: "12px",
-          background: "#3b82f6",
-          color: "#fff",
-          border: "none",
-          borderRadius: "6px",
-          fontWeight: 600,
-          cursor: isLoading ? "not-allowed" : "pointer",
-          opacity: isLoading ? 0.7 : 1,
-          transition: "background-color 0.2s ease",
-        }}
+        className="btn-db-action primary w-full"
       >
         {isLoading ? "Searching Matching Rides..." : "Search Matching Rides"}
       </button>
@@ -162,9 +151,9 @@ export default function SearchRide() {
   };
 
   return (
-    <div className="dashboard-theme" style={{ padding: "40px 20px" }}>
+    <div className="dashboard-theme search-ride-container">
       <div className="dashboard-focus-one-col">
-        <div className="dashboard-card" style={{ marginBottom: "20px" }}>
+        <div className="dashboard-card search-form-card">
           <h2>Search Travel Opportunities</h2>
           <SearchForm
             loading={loading}
@@ -172,27 +161,15 @@ export default function SearchRide() {
             onSearchSuccess={handleSearchSuccess}
             onSearchError={handleSearchError}
           />
-          {error && (
-            <p
-              style={{
-                color: "#ef4444",
-                marginTop: "10px",
-                fontSize: "0.9rem",
-              }}
-            >
-              {error}
-            </p>
-          )}
+          {error && <p className="error-message">{error}</p>}
         </div>
 
         {searchResults.length > 0 ? (
           <div className="dashboard-card">
-            <h3 style={{ marginTop: 0, marginBottom: "15px" }}>
+            <h3 className="matches-title">
               Compatible Matches (Overlapping &gt;= 70%)
             </h3>
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "12px" }}
-            >
+            <div className="matches-list">
               {searchResults.map((match, idx) => (
                 <RideMatchCard key={idx} match={match} />
               ))}
@@ -201,13 +178,7 @@ export default function SearchRide() {
         ) : (
           !loading &&
           searched && (
-            <p
-              style={{
-                textAlign: "center",
-                color: "var(--text-muted)",
-                fontSize: "0.9rem",
-              }}
-            >
+            <p className="empty-search-text">
               No matching rides found for this route selection.
             </p>
           )
