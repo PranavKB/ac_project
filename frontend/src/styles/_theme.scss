@@ -1,0 +1,33 @@
+// CSS Custom Property Theme Variables
+// Default: Dark Theme
+:root {
+  --bg-color: #090d16;
+  --surface-color: #131924;
+  --border-color: #30363d;
+  --text-color: #c9d1d9;
+  --text-muted: #8b949e;
+  --navbar-bg: #0d1117;
+  --navbar-border: #21262d;
+  --card-header-color: #ffffff;
+  --input-bg: #090d16;
+  --shadow-color: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="light"] {
+  --bg-color: #f8fafc;
+  --surface-color: #ffffff;
+  --border-color: #cbd5e1;
+  --text-color: #0f172a;
+  --text-muted: #64748b;
+  --navbar-bg: #ffffff;
+  --navbar-border: #cbd5e1;
+  --card-header-color: #0f172a;
+  --input-bg: #f1f5f9;
+  --shadow-color: rgba(0, 0, 0, 0.06);
+}
+
+// Semantic color tokens (used across dashboard components)
+$theme-blue:   #3b82f6;
+$theme-green:  #10b981;
+$theme-yellow: #f59e0b;
+$theme-red:    #ef4444;

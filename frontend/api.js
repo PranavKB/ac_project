@@ -51,6 +51,14 @@ export const rideAPI = {
     const res = await API.get(`/rides/${id}`);
     return res.data;
   },
+  start: async (id) => {
+    const res = await API.post(`/rides/${id}/start`);
+    return res.data;
+  },
+  complete: async (id, actualDistanceKm) => {
+    const res = await API.post(`/rides/${id}/complete`, { actualDistanceKm });
+    return res.data;
+  },
   updateStatus: async (id, status) => {
     const res = await API.put(`/rides/${id}/status`, { status });
     return res.data;

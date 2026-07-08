@@ -47,36 +47,16 @@ export default function LocationInput({ placeholder, onSelect }) {
   };
 
   return (
-    <div style={{ position: "relative", marginBottom: "15px" }}>
-      <input
-        value={query}
-        onChange={handleChange}
-        placeholder={placeholder}
-        style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
-      />
+    <div className="location-input-container">
+      <input value={query} onChange={handleChange} placeholder={placeholder} />
 
       {results.length > 0 && (
-        <ul
-          style={{
-            position: "absolute",
-            background: "#fff",
-            border: "1px solid #ccc",
-            width: "100%",
-            zIndex: 10,
-            listStyle: "none",
-            padding: 0,
-            margin: 0,
-          }}
-        >
+        <ul className="location-dropdown">
           {results.map((item, i) => (
             <li
               key={i}
               onClick={() => handleSelect(item)}
-              style={{
-                padding: "8px",
-                cursor: "pointer",
-                borderBottom: "1px solid #eee",
-              }}
+              className="location-dropdown-item"
             >
               {item.name}
             </li>

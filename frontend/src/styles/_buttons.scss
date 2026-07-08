@@ -1,5 +1,9 @@
+// Button System — Base, semantic variants, and dashboard action buttons
 @use "./variables" as *;
+@use "./theme" as *;
+@use "sass:color";
 
+// ── Legacy base buttons (used in non-dashboard pages) ──
 .btn {
   padding: 10px 18px;
   border-radius: 8px;
@@ -21,4 +25,112 @@
   background: transparent;
   border: 1px solid $primary;
   color: $primary;
+}
+
+// ── Dashboard Action Buttons ──
+// Usage: className="btn-db-action {color} {size} {width}"
+// Colors:  .primary | .success | .danger | .outline
+// Sizes:   .tall | .small   (default: medium 12px padding)
+// Width:   .w-full
+// Flex:    .flex-1 | .flex-1-2 | .flex-1-5
+.btn-db-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 12px;
+  color: #fff;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  // Width modifier
+  &.w-full { width: 100%; }
+
+  // Size modifiers
+  &.tall  { padding: 14px; font-size: 1.05rem; }
+  &.small { padding: 6px 12px; font-size: 0.8rem; border-radius: 4px; }
+
+  // Flex-grow modifiers (for use inside .form-actions-row)
+  &.flex-1   { flex: 1; }
+  &.flex-1-2 { flex: 1.2; }
+  &.flex-1-5 { flex: 1.5; }
+
+  // Color variants
+  &.primary {
+    background-color: $theme-blue;
+    &:hover:not(:disabled) { background-color: color.scale($theme-blue, $lightness: -10%); }
+  }
+
+  &.success {
+    background-color: $theme-green;
+    &:hover:not(:disabled) { background-color: color.scale($theme-green, $lightness: -10%); }
+  }
+
+  &.danger {
+    background-color: $theme-red;
+    &:hover:not(:disabled) { background-color: color.scale($theme-red, $lightness: -10%); }
+  }
+
+  &.outline {
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    font-weight: 600;
+
+    &:hover:not(:disabled) {
+      background-color: rgba(255, 255, 255, 0.05);
+      color: var(--card-header-color);
+    }
+
+    &:disabled { opacity: 0.5; }
+  }
+}
+
+// ── Inline list-card action buttons ──
+.book-btn {
+  background-color: $theme-blue;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1.2rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  outline: none;
+
+  &:hover { background-color: color.scale($theme-blue, $lightness: -10%); }
+
+  &:disabled {
+    background-color: var(--border-color);
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+}
+
+.cancel-btn {
+  background-color: transparent;
+  border: 1px solid rgba($theme-red, 0.4);
+  color: $theme-red;
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+
+  &:hover {
+    background-color: $theme-red;
+    color: #fff;
+    border-color: $theme-red;
+  }
 }

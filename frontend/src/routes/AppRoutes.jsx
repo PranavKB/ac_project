@@ -44,7 +44,23 @@ function AppRoutes() {
           path="/passenger"
           element={
             <ProtectedRoute allowedRoles={["PASSENGER"]}>
-              <PassengerDashboard />
+              <PassengerDashboard defaultView="all" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/passenger/search"
+          element={
+            <ProtectedRoute allowedRoles={["PASSENGER"]}>
+              <PassengerDashboard defaultView="search" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/passenger/bookings"
+          element={
+            <ProtectedRoute allowedRoles={["PASSENGER"]}>
+              <PassengerDashboard defaultView="bookings" />
             </ProtectedRoute>
           }
         />
@@ -52,13 +68,7 @@ function AppRoutes() {
           path="/admin"
           element={
             <ProtectedRoute allowedRoles={["ADMIN"]}>
-              <div
-                style={{
-                  padding: "2rem",
-                  textAlign: "center",
-                  marginTop: "2rem",
-                }}
-              >
+              <div className="admin-temp-panel">
                 <h2>Admin Dashboard</h2>
                 <p>Welcome, Administrator.</p>
               </div>

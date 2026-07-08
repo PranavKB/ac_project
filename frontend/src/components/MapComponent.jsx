@@ -94,20 +94,8 @@ export default function MapComponent({
       : "default";
 
   return (
-    <div
-      key={mapKey}
-      style={{
-        height: "100%",
-        width: "100%",
-        minHeight: "400px",
-        position: "relative",
-      }}
-    >
-      <MapContainer
-        center={center}
-        zoom={12}
-        style={{ height: "100%", width: "100%", borderRadius: "12px" }}
-      >
+    <div key={mapKey} className="map-container-wrapper">
+      <MapContainer center={center} zoom={12} className="map-container-inner">
         <ChangeView
           center={center}
           zoom={12}
