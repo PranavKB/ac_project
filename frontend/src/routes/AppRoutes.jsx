@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import StyleGuide from "../pages/StyleGuide/StyleGuide";
+import SocketTestPage from "../pages/SocketTest/SocketTestPage";
 import DriverDashboard from "../components/DriverDashboard";
 import PassengerDashboard from "../components/PassengerDashboard";
 import LoginPage from "../pages/Auth/LoginPage";
@@ -76,6 +77,7 @@ function AppRoutes() {
           }
         />
         <Route path="/style-guide" element={<StyleGuide />} />
+        <Route path="/socket-test" element={<SocketTestPage />} />
       </Routes>
     </BrowserRouter>
   );
