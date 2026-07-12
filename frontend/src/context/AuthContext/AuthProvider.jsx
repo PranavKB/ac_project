@@ -17,11 +17,25 @@ export default function AuthProvider({ children }) {
   });
 
   const login = (userData) => {
-    setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
-    if (userData?.data?.roles?.length > 0) {
-      setActiveRole(userData.data.roles[0]);
-      localStorage.setItem("activeRole", userData.data.roles[0]);
+    const token = userData?.data?.token;
+    const userProfile = userData?.data?.user;
+
+    if (token) {
+      localStorage.setItem("token", token);
+    }
+
+    // Expecting user.data to be the user profile
+    const compatibilityUser = {
+      ...userData,
+      data: userProfile,
+    };
+
+    setUser(compatibilityUser);
+    localStorage.setItem("user", JSON.stringify(compatibilityUser));
+
+    if (userProfile?.roles?.length > 0) {
+      setActiveRole(userProfile.roles[0]);
+      localStorage.setItem("activeRole", userProfile.roles[0]);
     }
   };
 
@@ -30,6 +44,7 @@ export default function AuthProvider({ children }) {
     setActiveRole(null);
     localStorage.removeItem("user");
     localStorage.removeItem("activeRole");
+    localStorage.removeItem("token");
   };
 
   const switchRole = (newRole) => {

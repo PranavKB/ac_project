@@ -6,9 +6,11 @@ import org.springframework.web.bind.annotation.*;
 
 import com.cdac.carpooling.model.User;
 import com.cdac.carpooling.service.AuthService;
+import com.cdac.carpooling.security.JwtUtil;
 import com.cdac.carpooling.dto.RegisterRequest;
 import com.cdac.carpooling.dto.ApiResponse;
 import com.cdac.carpooling.dto.LoginRequest;
+import com.cdac.carpooling.dto.LoginResponse;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -16,6 +18,7 @@ import com.cdac.carpooling.dto.LoginRequest;
 public class AuthController {
 
     private final AuthService authService;
+    private final JwtUtil jwtUtil;
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<Object>> register(@RequestBody RegisterRequest request) {
@@ -36,6 +39,8 @@ public class AuthController {
         if (user == null) {
             return ApiResponse.error("User not found.");
         }
-        return ApiResponse.success(user, "User logged in successfully.");
+        String token = jwtUtil.generateToken(user.getEmail());
+        LoginResponse loginResponse = new LoginResponse(token, user);
+        return ApiResponse.success(loginResponse, "User logged in successfully.");
     }
 }
