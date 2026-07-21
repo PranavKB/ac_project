@@ -12,6 +12,8 @@ import com.cdac.carpooling.dto.ApiResponse;
 import com.cdac.carpooling.dto.LoginRequest;
 import com.cdac.carpooling.dto.LoginResponse;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -21,7 +23,7 @@ public class AuthController {
     private final JwtUtil jwtUtil;
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<Object>> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<ApiResponse<Object>> register(@Valid @RequestBody RegisterRequest request) {
         User user = authService.register(
                 request.getName(),
                 request.getEmail(),
@@ -32,7 +34,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<Object>> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<ApiResponse<Object>> login(@Valid @RequestBody LoginRequest request) {
         User user = authService.login(
                 request.getEmail(),
                 request.getPassword());
@@ -44,3 +46,4 @@ public class AuthController {
         return ApiResponse.success(loginResponse, "User logged in successfully.");
     }
 }
+
