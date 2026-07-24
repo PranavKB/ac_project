@@ -108,4 +108,35 @@ public class JwtUtil {
         final String username = extractUsername(token);
         return (username != null && username.equals(userDetails.getUsername()));
     }
+
+    // Temporary registration token valid for 30 minutes
+    public String generateRegistrationToken(String email) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + (30 * 60 * 1000));
+
+        return Jwts.builder()
+                .setSubject(email)
+                .claim("type", "REGISTRATION")
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+                .compact();
+    }
+
+    // Validating registration token and return email if valid
+    public String validateRegistrationToken(String token) {
+        try {
+            Claims claims = extractAllClaims(token);
+            String type = claims.get("type", String.class);
+            if (!"REGISTRATION".equals(type)) {
+                throw new IllegalArgumentException("Invalid token type");
+            }
+            if (claims.getExpiration().before(new Date())) {
+                throw new IllegalArgumentException("Token has expired");
+            }
+            return claims.getSubject();
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid or expired registration token: " + e.getMessage());
+        }
+    }
 }

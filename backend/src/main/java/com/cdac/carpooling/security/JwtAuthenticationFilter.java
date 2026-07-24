@@ -1,9 +1,7 @@
 package com.cdac.carpooling.security;
 
 import java.io.IOException;
-import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,7 +19,6 @@ import jakarta.servlet.http.HttpServletResponse;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
-
     private final CustomUserDetailsService uds;
 
     public JwtAuthenticationFilter(JwtUtil jwtUtil, CustomUserDetailsService uds) {
@@ -35,10 +32,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
-        // Skipping JWT validation for login and register endpoints
+        // Skipping JWT validation for auth endpoints
         String path = request.getRequestURI();
-        List<String> skipPaths = List.of(SecurityConstants.LOGIN_URL, SecurityConstants.SIGN_UP_URL);
-        if (skipPaths.stream().anyMatch(path::startsWith)) {
+        if (path.startsWith("/api/auth/")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -61,9 +57,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 if (jwtUtil.isTokenValid(token, userDetails)) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities());
-                    if (request.getAttribute("email") == null) {
-                        request.setAttribute("email", username);
-                    }
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }

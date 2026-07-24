@@ -52,13 +52,24 @@ export const authAPI = {
     const res = await API.post("/auth/login", { email, password });
     return res.data;
   },
-  register: async (name, email, phone, password, roles) => {
+  requestRegisterLink: async (email) => {
+    const res = await API.post("/auth/request-register-link", { email });
+    return res.data;
+  },
+  verifyToken: async (token) => {
+    const res = await API.get(
+      `/auth/verify-token?token=${encodeURIComponent(token)}`,
+    );
+    return res.data;
+  },
+  register: async (name, email, phone, password, roles, token) => {
     const res = await API.post("/auth/register", {
       name,
       email,
       phone,
       password,
       roles,
+      token,
     });
     return res.data;
   },

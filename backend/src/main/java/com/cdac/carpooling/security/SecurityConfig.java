@@ -20,7 +20,6 @@ import com.cdac.carpooling.config.CustomUserDetailsService;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
-
     private final CustomUserDetailsService userDetailsService;
 
     public SecurityConfig(JwtAuthenticationFilter jwtFilter, CustomUserDetailsService userDetailsService) {
@@ -29,8 +28,7 @@ public class SecurityConfig {
     }
 
     private static final String[] PUBLIC_URLS = {
-            SecurityConstants.LOGIN_URL,
-            SecurityConstants.SIGN_UP_URL,
+            "/api/auth/**",
             // Swagger/OpenAPI
             "/v3/api-docs/**",
             "/swagger-ui/**",

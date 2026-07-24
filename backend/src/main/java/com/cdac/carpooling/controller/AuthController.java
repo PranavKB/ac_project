@@ -8,6 +8,7 @@ import com.cdac.carpooling.model.User;
 import com.cdac.carpooling.service.AuthService;
 import com.cdac.carpooling.security.JwtUtil;
 import com.cdac.carpooling.dto.RegisterRequest;
+import com.cdac.carpooling.dto.RegisterLinkRequest;
 import com.cdac.carpooling.dto.ApiResponse;
 import com.cdac.carpooling.dto.LoginRequest;
 import com.cdac.carpooling.dto.LoginResponse;
@@ -22,6 +23,18 @@ public class AuthController {
     private final AuthService authService;
     private final JwtUtil jwtUtil;
 
+    @PostMapping("/request-register-link")
+    public ResponseEntity<ApiResponse<Object>> requestRegisterLink(@Valid @RequestBody RegisterLinkRequest request) {
+        authService.requestRegistrationLink(request.getEmail());
+        return ApiResponse.success(null, "Registration link sent to your email. Please check your inbox.");
+    }
+
+    @GetMapping("/verify-token")
+    public ResponseEntity<ApiResponse<Object>> verifyToken(@RequestParam("token") String token) {
+        String email = authService.verifyRegistrationToken(token);
+        return ApiResponse.success(email, "Registration token verified successfully.");
+    }
+
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<Object>> register(@Valid @RequestBody RegisterRequest request) {
         User user = authService.register(
@@ -29,8 +42,9 @@ public class AuthController {
                 request.getEmail(),
                 request.getPhone(),
                 request.getPassword(),
-                request.getRoles());
-        return ApiResponse.success(user, "User registered successfully.");
+                request.getRoles(),
+                request.getToken());
+        return ApiResponse.success(user, "User registered successfully. A confirmation email has been sent.");
     }
 
     @PostMapping("/login")
@@ -46,4 +60,3 @@ public class AuthController {
         return ApiResponse.success(loginResponse, "User logged in successfully.");
     }
 }
-

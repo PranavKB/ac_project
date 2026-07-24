@@ -53,8 +53,19 @@
 }
 
 .error-box {
-  color: red;
+  color: #d32f2f;
+  background-color: #ffebee;
+  border: 1px solid #ffcdd2;
+  padding: 10px 14px;
+  border-radius: 4px;
   font-size: 14px;
+  line-height: 1.4;
+}
+
+.field-error {
+  color: #d32f2f;
+  font-size: 12px;
+  margin-top: 4px;
 }
 
 .register-btn {
