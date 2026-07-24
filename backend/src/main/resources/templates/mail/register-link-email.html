@@ -1,0 +1,109 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Complete Your Registration - Carpooling</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f4f7f6;
+        margin: 0;
+        padding: 0;
+        color: #333333;
+      }
+      .container {
+        max-width: 600px;
+        margin: 40px auto;
+        background: #ffffff;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      }
+      .header {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        padding: 35px 20px;
+        text-align: center;
+        color: #ffffff;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
+      .content {
+        padding: 35px 30px;
+        line-height: 1.6;
+      }
+      .content p {
+        font-size: 16px;
+        margin-bottom: 20px;
+        color: #4b5563;
+      }
+      .btn-container {
+        text-align: center;
+        margin: 35px 0;
+      }
+      .btn {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        color: #ffffff !important;
+        padding: 14px 32px;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 16px;
+        display: inline-block;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        transition: all 0.2s ease;
+      }
+      .footer {
+        background-color: #f9fafb;
+        padding: 20px;
+        text-align: center;
+        font-size: 13px;
+        color: #9ca3af;
+        border-top: 1px solid #e5e7eb;
+      }
+      .badge {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        margin-bottom: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="badge">Carpooling App</div>
+        <h1>Complete Your Registration</h1>
+      </div>
+      <div class="content">
+        <p>Hello,</p>
+        <p>
+          Thank you for starting your registration with Carpooling App! We
+          received a request to create an account for
+          <strong th:text="${email}">user@example.com</strong>.
+        </p>
+        <p>Please click the button below to complete your registration form:</p>
+
+        <div class="btn-container">
+          <a th:href="${registerLink}" class="btn" target="_blank"
+            >Complete Registration</a
+          >
+        </div>
+
+        <p style="font-size: 14px; color: #6b7280">
+          This registration link will expire in 30 minutes for security reasons.
+          If you did not request this email, please ignore it.
+        </p>
+      </div>
+      <div class="footer">
+        <p>&copy; 2026 Carpooling Platform. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+</html>
