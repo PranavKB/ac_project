@@ -31,4 +31,23 @@ public class UserController {
 
         return ApiResponse.success(user, "User retrieved successfully");
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<Object>> updateUser(@PathVariable String id, @RequestBody User updatedUser) {
+        Optional<User> userOptional = userRepository.findById(id);
+
+        if (userOptional.isEmpty()) {
+            return ApiResponse.error("User not found with id: " + id);
+        }
+
+        User user = userOptional.get();
+        if (updatedUser.getName() != null) user.setName(updatedUser.getName());
+        if (updatedUser.getEmail() != null) user.setEmail(updatedUser.getEmail());
+        if (updatedUser.getPhone() != null) user.setPhone(updatedUser.getPhone());
+
+        User saved = userRepository.save(user);
+        saved.setPassword(null);
+
+        return ApiResponse.success(saved, "User updated successfully");
+    }
 }

@@ -24,6 +24,7 @@ import com.cdac.carpooling.repository.RideRepository;
 import com.cdac.carpooling.service.CarbonService;
 import com.cdac.carpooling.service.H3Service;
 import com.cdac.carpooling.service.RideMatchingService;
+import com.cdac.carpooling.service.RoutingService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ public class RideController {
     private final RideMatchingService rideMatchingService;
     private final RideRepository rideRepository;
     private final CarbonService carbonService;
+    private final RoutingService routingService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<Object>> createRide(@Valid @RequestBody RideCreationRequest request) {
@@ -57,17 +59,24 @@ public class RideController {
         ride.setDestination(parseLocationDto(request.getDestination()));
         List<Double> srccoords = request.getSource().getLocation().getCoordinates();
         List<Double> dstcoords = request.getDestination().getLocation().getCoordinates();
-        List<List<Double>> routeCoords = List.of(srccoords, dstcoords);
-        if (routeCoords != null && !routeCoords.isEmpty()) {
-            ride.setRouteCoords(routeCoords);
-            ride.setH3RouteSegments(h3Service.pathToH3Segments(routeCoords));
-            // Initialize currentLocation as starting coordinate
-            ride.setCurrentLocation(srccoords);
-        }
+        String startH3 = h3Service.pathToH3Segments(List.of(List.of(srccoords.get(1), srccoords.get(0)))).get(0);
+        String endH3 = h3Service.pathToH3Segments(List.of(List.of(dstcoords.get(1), dstcoords.get(0)))).get(0);
+        ride.setH3RouteSegments(List.of(startH3, endH3));
+        ride.setRouteCoords(
+                List.of(List.of(srccoords.get(1), srccoords.get(0)), List.of(dstcoords.get(1), dstcoords.get(0))));
+        // Initialize currentLocation as starting coordinate
+        ride.setCurrentLocation(srccoords);
+        // Build execution details
+        Ride.ExecutionDetails details = new Ride.ExecutionDetails();
+        details.setActualDistanceKm(0);
+        ride.setExecutionDetails(details);
         Ride saved = rideRepository.save(ride);
         if (saved == null) {
             return ApiResponse.error("Failed to create ride. Please try again.");
         }
+        // Asynchronously populate the full polyline H3 segments in background
+        rideMatchingService.populateRouteH3SegmentsAsync(saved.getId(), srccoords.get(0), srccoords.get(1),
+                dstcoords.get(0), dstcoords.get(1));
         return ApiResponse.success(saved, "Ride created Successfully");
     }
 
@@ -101,8 +110,11 @@ public class RideController {
         }
 
         try {
-            List<List<Double>> simplePath = List.of(src, dst);
-            List<String> passengerH3 = h3Service.pathToH3Segments(simplePath);
+            // Fetch full driving polyline coordinates for the passenger's route
+            List<List<Double>> routeCoords = routingService.getRouteCoordinates(
+                    src.get(0), src.get(1),
+                    dst.get(0), dst.get(1));
+            List<String> passengerH3 = h3Service.pathToH3Segments(routeCoords);
             List<Map<String, Object>> matches = rideMatchingService.findMatchingRides(passengerH3);
             return ApiResponse.success(matches, "Matching rides fetched successfully");
         } catch (Exception e) {
@@ -132,6 +144,10 @@ public class RideController {
         if (ride == null) {
             return ApiResponse.error("Ride not found", HttpStatus.NOT_FOUND);
         }
+        // Build execution details
+        Ride.ExecutionDetails details = new Ride.ExecutionDetails();
+        details.setStartTime(Instant.now());
+        ride.setExecutionDetails(details);
         ride.setStatus("ONGOING");
         Ride saved = rideRepository.save(ride);
         return ApiResponse.success(saved, "Ride started successfully");
@@ -148,9 +164,24 @@ public class RideController {
 
         ride.setStatus("COMPLETED");
 
+        // Keep only start and end H3 segments, deleting the intermediate path cells to
+        // save storage space
+        List<String> h3Segments = ride.getH3RouteSegments();
+        if (h3Segments != null && h3Segments.size() >= 2) {
+            String startH3 = h3Segments.get(0);
+            String endH3 = h3Segments.get(h3Segments.size() - 1);
+            ride.setH3RouteSegments(List.of(startH3, endH3));
+        }
+        List<List<Double>> routeCords = ride.getRouteCoords();
+        if (routeCords != null && routeCords.size() >= 2) {
+            List<Double> startCoord = routeCords.get(0);
+            List<Double> endCoord = routeCords.get(routeCords.size() - 1);
+            ride.setRouteCoords(List.of(startCoord, endCoord));
+        }
+
         // Build execution details
         Ride.ExecutionDetails details = new Ride.ExecutionDetails();
-        details.setStartTime(Instant.now().minusSeconds(3600)); // approx 1 hour duration
+        details.setStartTime(ride.getExecutionDetails().getStartTime());
         details.setEndTime(Instant.now());
 
         double distanceKm = body != null && body.get("actualDistanceKm") != null

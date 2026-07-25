@@ -10,6 +10,7 @@ import com.cdac.carpooling.model.LocationPoint;
 import com.cdac.carpooling.model.Ride;
 import com.cdac.carpooling.repository.RideRepository;
 import com.cdac.carpooling.service.H3Service;
+import com.cdac.carpooling.service.RoutingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,8 +25,8 @@ import java.time.Instant;
 import java.util.List;
 
 @SpringBootTest
-@AutoConfigureMockMvc                                                                        
-@ActiveProfiles("test") 
+@AutoConfigureMockMvc(addFilters = false)
+@ActiveProfiles("test")
 class RideControllerTest {
 
     @Autowired
@@ -36,6 +37,9 @@ class RideControllerTest {
 
     @Autowired
     private H3Service h3Service;
+
+    @Autowired
+    private RoutingService routingService;
 
     @BeforeEach
     void setUp() {
@@ -97,8 +101,8 @@ class RideControllerTest {
         List<Double> srcCoords = List.of(12.9716, 77.5946);
         List<Double> dstCoords = List.of(12.9279, 77.6413);
 
-        List<List<Double>> simplePath = List.of(srcCoords, dstCoords);
-        List<String> realCalculatedH3 = h3Service.pathToH3Segments(simplePath);
+        List<List<Double>> routeCoords = routingService.getRouteCoordinates(srcCoords.get(0), srcCoords.get(1), dstCoords.get(0), dstCoords.get(1));
+        List<String> realCalculatedH3 = h3Service.pathToH3Segments(routeCoords);
 
         Ride expectedRide = new Ride();
         expectedRide.setDriverId("driver-999");
@@ -159,8 +163,36 @@ class RideControllerTest {
         mockMvc.perform(post("/api/rides/search")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(invalidPayload))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("Invalid coordinates provided"));
+                 .andExpect(status().isBadRequest())
+                 .andExpect(jsonPath("$.success").value(false))
+                 .andExpect(jsonPath("$.message").value("Invalid coordinates provided"));
+     }
+
+    @Test
+    @WithMockUser(username = "driver1", roles = {"DRIVER"})
+    void testCompleteRide_shouldPruneH3Segments() throws Exception {
+        Ride ride = new Ride();
+        ride.setDriverId("driver-777");
+        ride.setStatus("ACTIVE");
+        ride.setH3RouteSegments(List.of("h3_1", "h3_2", "h3_3", "h3_4"));
+        Ride.ExecutionDetails details = new Ride.ExecutionDetails();
+        details.setStartTime(Instant.now());
+        ride.setExecutionDetails(details);
+
+        Ride savedRide = rideRepository.save(ride);
+
+        mockMvc.perform(post("/api/rides/" + savedRide.getId() + "/complete")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Ride completed successfully"));
+
+        Ride completedRide = rideRepository.findById(savedRide.getId()).orElse(null);
+        assertNotNull(completedRide);
+        assertEquals("COMPLETED", completedRide.getStatus());
+        assertEquals(2, completedRide.getH3RouteSegments().size());
+        assertEquals("h3_1", completedRide.getH3RouteSegments().get(0));
+        assertEquals("h3_4", completedRide.getH3RouteSegments().get(1));
     }
 }
