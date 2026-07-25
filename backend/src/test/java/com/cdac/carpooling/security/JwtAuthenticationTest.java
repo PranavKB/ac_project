@@ -60,7 +60,7 @@ class JwtAuthenticationTest {
                                 .content(registerPayload))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.success").value(true))
-                                .andExpect(jsonPath("$.message").value("User registered successfully."));
+                                .andExpect(jsonPath("$.message").value("User registered successfully. A confirmation email has been sent."));
 
                 // 3. Login with registered credentials
                 // should return JWT token

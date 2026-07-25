@@ -51,7 +51,7 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.email").value("jane@example.com"))
-                .andExpect(jsonPath("$.message").value("User registered successfully."));
+                .andExpect(jsonPath("$.message").value("User registered successfully. A confirmation email has been sent."));
 
         assertEquals(1, userRepository.count());
     }

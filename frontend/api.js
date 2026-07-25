@@ -157,3 +157,14 @@ export const messageAPI = {
     return res.data;
   },
 };
+
+export const userAPI = {
+  get: async (id) => {
+    const res = await API.get(`/users/${id}`);
+    return res.data;
+  },
+  update: async (id, userData) => {
+    const res = await API.put(`/users/${id}`, userData);
+    return res.data;
+  },
+};

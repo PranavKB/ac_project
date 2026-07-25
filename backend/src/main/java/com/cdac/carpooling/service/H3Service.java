@@ -11,7 +11,7 @@ import java.util.*;
 public class H3Service {
 
     private H3Core h3;
-    private static final int H3_RESOLUTION = 8; // ~460m hexagons
+    private static final int H3_RESOLUTION = 9; // ~100m hexagons
 
     @PostConstruct
     public void init() throws IOException {
@@ -24,7 +24,10 @@ public class H3Service {
     public List<String> pathToH3Segments(List<List<Double>> coords) {
         LinkedHashSet<String> cells = new LinkedHashSet<>();
         for (List<Double> coord : coords) {
-            cells.add(h3.latLngToCellAddress(coord.get(0), coord.get(1), H3_RESOLUTION));
+            // rounding cordinates to 6 decimals
+            double lat = Math.round(coord.get(0) * 1e6) / 1e6;
+            double lng = Math.round(coord.get(1) * 1e6) / 1e6;
+            cells.add(h3.latLngToCellAddress(lat, lng, H3_RESOLUTION));
         }
         return new ArrayList<>(cells);
     }
@@ -39,16 +42,25 @@ public class H3Service {
         Set<String> setA = new HashSet<>(segmentsA);
         Set<String> setB = new HashSet<>(segmentsB);
         Set<String> intersection = new HashSet<>(setA);
-        //A intersection B
+        // A intersection B
         intersection.retainAll(setB);
         Set<String> union = new HashSet<>(setA);
-        //A Union B
+        // A Union B
         union.addAll(setB);
         return union.isEmpty() ? 0.0 : (double) intersection.size() / union.size();
     }
 
+    /**
+     * Haversine distance between two [lat, lng] points in km.
+     */
+    public double haversineKm(double lat1, double lng1, double lat2, double lng2) {
+        final double R = 6371.0;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                        * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
 }
-
-
-
-
