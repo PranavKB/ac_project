@@ -108,17 +108,15 @@ export const rideAPI = {
 
 export const routeAPI = {
   fetch: async (src, dest) => {
-    const url = `https://router.project-osrm.org/route/v1/driving/${src.lng},${src.lat};${dest.lng},${dest.lat}?overview=full&geometries=geojson`;
-    const res = await fetch(url);
-    const data = await res.json();
-    if (data.routes && data.routes.length > 0) {
-      // GeoJSON coords are [lng, lat] — flip to [lat, lng] for Leaflet
-      return data.routes[0].geometry.coordinates.map(([lng, lat]) => [
-        lat,
-        lng,
-      ]);
-    }
-    return [];
+    const res = await API.get("/route", {
+      params: {
+        srcLat: src.lat,
+        srcLng: src.lng,
+        destLat: dest.lat,
+        destLng: dest.lng,
+      },
+    });
+    return res.data?.data || [];
   },
 };
 
