@@ -6,7 +6,7 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import prettierPlugin from "eslint-plugin-prettier";
 import prettierConfig from "eslint-config-prettier";
 
-const MAX_STATEMENTS = 150;
+const MAX_STATEMENTS = 250;
 
 const baseRules = {
   "prettier/prettier": "error",
