@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AuthProvider from "../context/AuthContext/AuthProvider";
 import Navbar from "../components/Navbar/Navbar";
 import ProtectedRoute from "../components/ProtectedRoute";
+import RoleBasedRedirect from "../components/RoleBasedRedirect";
 
 import LoginPage from "../pages/Auth/LoginPage";
 import RegisterPage from "../pages/Auth/RegisterPage";
@@ -13,6 +14,14 @@ import StyleGuide from "../pages/StyleGuide/StyleGuide";
 import SocketTestPage from "../pages/SocketTest/SocketTestPage";
 import Profile from "../components/Profile";
 import RequestRegisterLinkPage from "../pages/Auth/RequestRegisterLinkPage";
+import AdminLayout from "../pages/Admin/AdminLayout";
+import AdminOverview from "../pages/Admin/AdminOverview";
+import AdminUsers from "../pages/Admin/AdminUsers";
+import AdminRides from "../pages/Admin/AdminRides";
+import AdminEnvironmentalAnalytics from "../pages/Admin/AdminEnvironmentalAnalytics";
+import AdminReputationAnalytics from "../pages/Admin/AdminReputationAnalytics";
+import AdminNotifications from "../pages/Admin/AdminNotifications";
+import AdminSettings from "../pages/Admin/AdminSettings";
 
 function AppRoutes() {
   return (
@@ -38,8 +47,32 @@ function AppRoutes() {
             }
           />
 
-          {/* Root redirect to Passenger Search */}
-          <Route path="/" element={<Navigate to="/passenger" replace />} />
+          {/* Root redirect: admins go to /admin, everyone else to /passenger */}
+          <Route path="/" element={<RoleBasedRedirect />} />
+
+          {/* Admin Routes */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<AdminOverview />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="rides" element={<AdminRides />} />
+            <Route
+              path="analytics/environmental"
+              element={<AdminEnvironmentalAnalytics />}
+            />
+            <Route
+              path="analytics/reputation"
+              element={<AdminReputationAnalytics />}
+            />
+            <Route path="notifications" element={<AdminNotifications />} />
+            <Route path="settings" element={<AdminSettings />} />
+          </Route>
 
           {/* Ride Details View */}
           <Route

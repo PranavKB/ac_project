@@ -20,7 +20,11 @@ export default function LoginPage() {
     try {
       const user = await authAPI.login(values.email, values.password);
       login(user);
-      navigate("/driver");
+      if (user?.data?.user?.roles?.includes("ADMIN")) {
+        navigate("/admin");
+      } else {
+        navigate("/driver");
+      }
     } catch (err) {
       setError(err.response?.data?.message || "Invalid email or password.");
     } finally {
