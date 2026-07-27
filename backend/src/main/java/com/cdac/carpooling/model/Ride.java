@@ -32,6 +32,8 @@ public class Ride {
 
     private Instant departureTime;
 
+    private Instant createdAt = Instant.now();
+
     // Arrival time derived as: departureTime + estimatedDurationMinutes
     private int estimatedDurationMinutes;
 

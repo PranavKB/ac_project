@@ -168,3 +168,34 @@ export const userAPI = {
     return res.data;
   },
 };
+
+export const adminAPI = {
+  getOverviewStats: async () => {
+    const res = await API.get("/admin/stats/overview");
+    return res.data;
+  },
+  getUsers: async () => {
+    const res = await API.get("/admin/users");
+    return res.data;
+  },
+  deleteUser: async (id) => {
+    const res = await API.delete(`/admin/users/${id}`);
+    return res.data;
+  },
+  getRides: async () => {
+    const res = await API.get("/admin/rides");
+    return res.data;
+  },
+  deleteRide: async (id) => {
+    const res = await API.delete(`/admin/rides/${id}`);
+    return res.data;
+  },
+  getEnvironmentalAnalytics: async () => {
+    const res = await API.get("/admin/analytics/environmental");
+    return res.data;
+  },
+  getReputationAnalytics: async () => {
+    const res = await API.get("/admin/analytics/reputation");
+    return res.data;
+  },
+};
