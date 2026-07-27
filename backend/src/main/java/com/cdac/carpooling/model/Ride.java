@@ -31,6 +31,13 @@ public class Ride {
     private List<List<Double>> routeCoords = new ArrayList<>();
 
     private Instant departureTime;
+
+    // Arrival time derived as: departureTime + estimatedDurationMinutes
+    private int estimatedDurationMinutes;
+
+    // Price per seat in INR
+    private Double pricePerSeat;
+
     private int availableSeats;
     private int totalSeats;
 
@@ -41,7 +48,6 @@ public class Ride {
 
     private List<Double> currentLocation;
 
-    // Appended on COMPLETED
     private ExecutionDetails executionDetails;
 
     @Data

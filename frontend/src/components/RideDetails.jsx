@@ -13,6 +13,7 @@ import {
   Col,
   Alert,
   Modal,
+  Tag,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -202,12 +203,12 @@ function DriverDetailsCard({ driverInitial, driverName }) {
           <ThunderboltFilled style={{ color: "#00aff5", marginRight: "8px" }} />{" "}
           Your booking will be confirmed instantly
         </div>
-        <div>🚭 No smoking, please</div>
+        <div> No smoking, please</div>
         <div>
           <CarOutlined style={{ color: "#708c91", marginRight: "8px" }} /> Max.
           2 in the back
         </div>
-        <div>🚘 TOYOTA Innova - Grey</div>
+        <div> TOYOTA Innova - Grey</div>
       </Space>
       <Button
         type="default"
@@ -227,7 +228,7 @@ function DriverDetailsCard({ driverInitial, driverName }) {
   );
 }
 
-function PassengersCard({ passengers, srcName, destName }) {
+function PassengersCard({ passengers }) {
   return (
     <Card
       title={
@@ -269,9 +270,21 @@ function PassengersCard({ passengers, srcName, destName }) {
                   {p.passengerName || "Passenger"}
                 </div>
                 <div style={{ fontSize: "0.85rem", color: "#708c91" }}>
-                  {srcName} → {destName}
+                  {p.source?.name || "Unknown Source"} {" -> "}{" "}
+                  {p.destination?.name || "Unknown Destination"}
                 </div>
               </div>
+              <Tag
+                color={p.status === "APPROVED" ? "success" : "warning"}
+                style={{
+                  borderRadius: "999px",
+                  padding: "3px 10px",
+                  float: "right",
+                  marginLeft: "auto",
+                }}
+              >
+                {p.status}
+              </Tag>
             </div>
           ))}
         </div>
@@ -665,11 +678,7 @@ function GridDetailsLayout({
             driverInitial={driverInitial}
             driverName={driverName}
           />
-          <PassengersCard
-            passengers={passengers}
-            srcName={srcName}
-            destName={destName}
-          />
+          <PassengersCard passengers={passengers} />
           {ride.status === "ONGOING" && (
             <TripChatCard
               messages={messages}
@@ -747,19 +756,41 @@ const parseRideTimesAndLocations = (ride) => {
         hour: "2-digit",
         minute: "2-digit",
       })
-    : "08:00";
-  const arrTime = ride.arrivalTime || "17:20";
-  const durationText = ride.estimatedDuration || "9h20";
+    : "N/A";
+
+  // Derive arrival time from departureTime + estimatedDurationMinutes
+  const arrTime = (() => {
+    if (!ride.departureTime || !ride.estimatedDurationMinutes) return "N/A";
+    const arrival = new Date(
+      new Date(ride.departureTime).getTime() +
+        ride.estimatedDurationMinutes * 60 * 1000,
+    );
+    return arrival.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  })();
+
+  // Format estimatedDurationMinutes → "Xh Ym" / "Ym"
+  const mins = ride.estimatedDurationMinutes;
+  let durationText = "N/A";
+  if (mins && mins > 0) {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    durationText = h > 0 ? `${h}h${m > 0 ? ` ${m}m` : ""}` : `${m}m`;
+  }
+
   const priceAmount = ride.pricePerSeat
     ? `₹${ride.pricePerSeat.toLocaleString("en-IN")}.00`
-    : "₹1,130.00";
+    : "N/A";
+
   const formattedDate = ride.departureTime
     ? new Date(ride.departureTime).toLocaleDateString("en-US", {
         weekday: "long",
         day: "numeric",
         month: "long",
       })
-    : "Friday, 10 July";
+    : "N/A";
 
   return {
     srcName,

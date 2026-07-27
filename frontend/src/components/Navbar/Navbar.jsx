@@ -7,6 +7,7 @@ import {
   UserOutlined,
   LogoutOutlined,
   StarFilled,
+  CarFilled,
 } from "@ant-design/icons";
 
 const { Header } = Layout;
@@ -107,15 +108,9 @@ export default function Navbar() {
         style={{ display: "flex", alignItems: "center", cursor: "pointer" }}
         onClick={handleFindRide}
       >
-        <svg
-          viewBox="0 0 24 24"
-          width="32"
-          height="32"
-          fill="#00aff5"
-          style={{ marginRight: 8 }}
-        >
-          <path d="M6.5 6A4.5 4.5 0 002 10.5C2 12.87 3.33 15 5.5 15H6v2.5a.5.5 0 00.8.4l3.2-2.4c.17.03.33.05.5.05a4.5 4.5 0 004.5-4.5A4.5 4.5 0 009.5 6h-3zm8 3A4.5 4.5 0 0010 13.5c0 .17.02.33.05.5l3.2 2.4a.5.5 0 00.8-.4V16h.5c2.17 0 3.5-2.13 3.5-4.5A4.5 4.5 0 0013.5 7h-1z" />
-        </svg>
+        <CarFilled
+          style={{ fontSize: "1.5rem", color: "#00aff5", marginRight: 4 }}
+        />
         <span
           style={{
             fontSize: "1.5rem",

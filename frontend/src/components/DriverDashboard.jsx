@@ -138,7 +138,7 @@ function PostedTripsTabContent({
                         marginBottom: "4px",
                       }}
                     >
-                      {ride.source?.name.split(",")[0]} →{" "}
+                      {ride.source?.name.split(",")[0]} {" -> "}
                       {ride.destination?.name.split(",")[0]}
                     </div>
                     <Text type="secondary" style={{ fontSize: "0.85rem" }}>
@@ -202,7 +202,7 @@ function PostedTripsTabContent({
                       fontWeight: 800,
                     }}
                   >
-                    {selectedRide.source?.name.split(",")[0]} →{" "}
+                    {selectedRide.source?.name.split(",")[0]} {" -> "}
                     {selectedRide.destination?.name.split(",")[0]}
                   </Title>
                   <Text type="secondary">
@@ -326,7 +326,7 @@ function RequestQueueTabContent({
                 style={{ width: "280px" }}
                 options={postedRides.map((ride) => ({
                   value: ride.id,
-                  label: `${ride.source?.name.split(",")[0]} → ${ride.destination?.name.split(",")[0]} (${ride.status})`,
+                  label: `${ride.source?.name.split(",")[0]} -> ${ride.destination?.name.split(",")[0]} (${ride.status})`,
                 }))}
               />
             </Space>
@@ -386,7 +386,7 @@ function RequestQueueTabContent({
                           marginTop: "2px",
                         }}
                       >
-                        {req.source?.name.split(",")[0]} →{" "}
+                        {req.source?.name.split(",")[0]} {" -> "}
                         {req.destination?.name.split(",")[0]}
                       </div>
                     </div>
@@ -472,7 +472,7 @@ function RequestQueueTabContent({
                           marginTop: "2px",
                         }}
                       >
-                        {req.source?.name.split(",")[0]} →{" "}
+                        {req.source?.name.split(",")[0]} {" -> "}
                         {req.destination?.name.split(",")[0]}
                       </div>
                     </div>

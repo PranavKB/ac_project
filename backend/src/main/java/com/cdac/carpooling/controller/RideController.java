@@ -46,6 +46,8 @@ public class RideController {
         ride.setDriverName(request.getDriverName());
         ride.setTotalSeats(request.getTotalSeats());
         ride.setAvailableSeats(request.getTotalSeats());
+        ride.setEstimatedDurationMinutes(request.getEstimatedDurationMinutes());
+        ride.setPricePerSeat(request.getPricePerSeat());
         ride.setStatus("ACTIVE");
 
         if (request.getDepartureTime() != null && !request.getDepartureTime().isBlank()) {

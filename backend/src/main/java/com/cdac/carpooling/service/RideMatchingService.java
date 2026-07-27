@@ -1,6 +1,8 @@
 package com.cdac.carpooling.service;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.cdac.carpooling.model.Ride;
@@ -41,7 +43,7 @@ public class RideMatchingService {
         return matches;
     }
 
-    @org.springframework.scheduling.annotation.Async
+    @Async
     public void populateRouteH3SegmentsAsync(String rideId, double srcLat, double srcLng, double destLat,
             double destLng) {
         try {

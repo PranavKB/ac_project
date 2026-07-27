@@ -21,6 +21,10 @@ public class RideCreationRequest {
 
     private String departureTime;
 
+    private int estimatedDurationMinutes;
+
+    private Double pricePerSeat;
+
     @NotNull(message = "Source location is required")
     @Valid
     private LocationDto source;

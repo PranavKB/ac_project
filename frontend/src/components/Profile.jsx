@@ -697,7 +697,7 @@ function AccountTabContent({
                         marginBottom: "4px",
                       }}
                     >
-                      {sourceLabel} → {destLabel}
+                      {sourceLabel} {" -> "} {destLabel}
                     </div>
                     <Text type="secondary" style={{ fontSize: "0.85rem" }}>
                       Price per seat: ₹{trip.pricePerSeat || "1,130"}

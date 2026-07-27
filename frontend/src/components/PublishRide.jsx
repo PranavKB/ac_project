@@ -13,7 +13,12 @@ import {
   Row,
   Col,
 } from "antd";
-import { CarOutlined, CalendarOutlined } from "@ant-design/icons";
+import {
+  CarOutlined,
+  CalendarOutlined,
+  ClockCircleOutlined,
+  DollarOutlined,
+} from "@ant-design/icons";
 
 export default function PublishRide({
   onPublishSuccess,
@@ -67,11 +72,18 @@ export default function PublishRide({
 
     setIsPublishing(true);
     try {
+      const durationMins = parseInt(values.estimatedDurationMinutes, 10) || 0;
+      const departureISO = values.departureTime.toISOString();
+
       const requestBody = {
         driverId: user.data.id,
         driverName: user.data.name,
         totalSeats: parseInt(values.totalSeats, 10) || 1,
-        departureTime: values.departureTime.toISOString(),
+        departureTime: departureISO,
+        estimatedDurationMinutes: durationMins,
+        pricePerSeat: values.pricePerSeat
+          ? parseFloat(values.pricePerSeat)
+          : null,
         source: {
           name: sourceLocation.name,
           location: {
@@ -171,6 +183,40 @@ export default function PublishRide({
               placeholder="Select date & time"
               style={{ width: "100%" }}
               prefix={<CalendarOutlined />}
+            />
+          </Form.Item>
+        </Col>
+      </Row>
+
+      <Row gutter={16}>
+        <Col span={12}>
+          <Form.Item
+            name="estimatedDurationMinutes"
+            label="Estimated Duration (minutes)"
+            rules={[
+              { required: true, message: "Please enter estimated duration" },
+            ]}
+          >
+            <InputNumber
+              min={1}
+              max={1440}
+              style={{ width: "100%" }}
+              placeholder="e.g. 90"
+              prefix={<ClockCircleOutlined />}
+            />
+          </Form.Item>
+        </Col>
+        <Col span={12}>
+          <Form.Item
+            name="pricePerSeat"
+            label="Price per Seat (₹)"
+            rules={[{ required: true, message: "Please enter price per seat" }]}
+          >
+            <InputNumber
+              min={0}
+              style={{ width: "100%" }}
+              placeholder="e.g. 500"
+              prefix={<DollarOutlined />}
             />
           </Form.Item>
         </Col>
