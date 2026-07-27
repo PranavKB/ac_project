@@ -33,12 +33,61 @@ public class H3Service {
     }
 
     /**
-     * Route Similarity = |intersection| / |union|
+     * Ordered H3 Cell Similarity Algorithm:
+     * Compares the stored sequence of H3 cells between Driver (segmentsA) and Passenger (segmentsB).
+     * Enforces that matching H3 cells MUST follow the same forward order along the driver's route.
+     * Reverse or backward order searches immediately evaluate to 0.0.
      */
     public double calculateSimilarity(List<String> segmentsA, List<String> segmentsB) {
         if (segmentsA == null || segmentsB == null || segmentsA.isEmpty() || segmentsB.isEmpty()) {
             return 0.0;
         }
+
+        // Map driver H3 cells to their index positions in driver's route
+        Map<String, Integer> driverIndexMap = new HashMap<>();
+        for (int i = 0; i < segmentsA.size(); i++) {
+            driverIndexMap.putIfAbsent(segmentsA.get(i), i);
+        }
+
+        // Collect matching driver cell indices for passenger's ordered H3 cells
+        List<Integer> matchedIndices = new ArrayList<>();
+        for (String pCell : segmentsB) {
+            if (driverIndexMap.containsKey(pCell)) {
+                matchedIndices.add(driverIndexMap.get(pCell));
+            }
+        }
+
+        if (matchedIndices.size() < 2) {
+            return 0.0;
+        }
+
+        // Evaluate forward vs backward cell sequence ordering
+        int maxForwardSequence = 1;
+        int maxBackwardSequence = 1;
+        int currentForward = 1;
+        int currentBackward = 1;
+
+        for (int k = 1; k < matchedIndices.size(); k++) {
+            if (matchedIndices.get(k) > matchedIndices.get(k - 1)) {
+                currentForward++;
+                maxForwardSequence = Math.max(maxForwardSequence, currentForward);
+            } else {
+                currentForward = 1;
+            }
+
+            if (matchedIndices.get(k) < matchedIndices.get(k - 1)) {
+                currentBackward++;
+                maxBackwardSequence = Math.max(maxBackwardSequence, currentBackward);
+            } else {
+                currentBackward = 1;
+            }
+        }
+
+        // If cells appear in reverse/backward order, return 0.0 (Reverse Search)
+        if (maxBackwardSequence >= maxForwardSequence || matchedIndices.get(0) >= matchedIndices.get(matchedIndices.size() - 1)) {
+            return 0.0;
+        }
+
         Set<String> setA = new HashSet<>(segmentsA);
         Set<String> setB = new HashSet<>(segmentsB);
         Set<String> intersection = new HashSet<>(setA);
@@ -47,6 +96,7 @@ public class H3Service {
         Set<String> union = new HashSet<>(setA);
         // A Union B
         union.addAll(setB);
+
         return union.isEmpty() ? 0.0 : (double) intersection.size() / union.size();
     }
 

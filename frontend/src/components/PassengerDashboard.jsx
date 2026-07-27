@@ -20,7 +20,6 @@ import {
 import {
   ClockCircleOutlined,
   TagOutlined,
-  FieldTimeOutlined,
   SafetyOutlined,
   AlertOutlined,
   CloseCircleOutlined,
@@ -29,6 +28,59 @@ import {
 const { Title, Text } = Typography;
 
 // --- Helper components and logic to satisfy max-lines-per-function rule ---
+
+const readSessionSearch = () => {
+  try {
+    const saved = sessionStorage.getItem("carpool_last_search");
+    if (saved) return JSON.parse(saved);
+  } catch (err) {
+    console.error("Failed to parse saved search state:", err);
+  }
+  return null;
+};
+
+const fetchPassengerBookings = async (userId) => {
+  if (!userId) return [];
+  try {
+    const response = await requestAPI.getByPassenger(userId);
+    const bookingsList = response?.data || response || [];
+
+    return await Promise.all(
+      bookingsList.map(async (booking) => {
+        try {
+          if (booking.rideId) {
+            const ride = await rideAPI.get(booking.rideId);
+            return { ...booking, rideStatus: ride?.status || "UNKNOWN" };
+          }
+        } catch (err) {
+          console.error("Failed to enrich booking:", booking.id, err);
+        }
+        return { ...booking, rideStatus: "UNKNOWN" };
+      }),
+    );
+  } catch (err) {
+    console.error("Failed to fetch passenger bookings:", err);
+    return [];
+  }
+};
+
+const saveSearchToSession = (data, newMapProps) => {
+  try {
+    sessionStorage.setItem(
+      "carpool_last_search",
+      JSON.stringify({
+        searchResults: data.searchResults || [],
+        searchDetails: data.searchDetails,
+        searchedRoute: data.routeCoords,
+        mapProps: newMapProps,
+        date: data.date,
+        passengers: data.passengers,
+      }),
+    );
+  } catch (err) {
+    console.error("Failed to save search to session:", err);
+  }
+};
 
 const filterAndSortRides = (
   searchResults,
@@ -53,8 +105,6 @@ const filterAndSortRides = (
   return [...filtered].sort((a, b) => {
     if (sortBy === "price")
       return (a.ride?.pricePerSeat || 0) - (b.ride?.pricePerSeat || 0);
-    if (sortBy === "shortest")
-      return (a.ride?.durationMinutes || 0) - (b.ride?.durationMinutes || 0);
     const timeA = new Date(a.ride?.departureTime || 0).getTime();
     const timeB = new Date(b.ride?.departureTime || 0).getTime();
     return timeA - timeB;
@@ -216,18 +266,6 @@ function FilterSidebarCard({
                 <TagOutlined /> Lowest price
               </Space>
             </Radio>
-            <Radio
-              value="shortest"
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                width: "100%",
-              }}
-            >
-              <Space>
-                <FieldTimeOutlined /> Shortest ride
-              </Space>
-            </Radio>
           </Space>
         </Radio.Group>
       </Card>
@@ -312,6 +350,69 @@ function FilterSidebarCard({
   );
 }
 
+function SearchResultsCard({
+  sortedResults,
+  searchError,
+  searchResults,
+  bookings,
+  bookingInProgressId,
+  handleBookRide,
+}) {
+  return (
+    <Card
+      title={
+        <span style={{ color: "#054752", fontWeight: 800 }}>
+          Available Shared Rides ({sortedResults.length})
+        </span>
+      }
+      style={{ borderRadius: "16px", border: "1px solid #eef0f2" }}
+    >
+      {searchError ? (
+        <div
+          style={{
+            display: "flex",
+            gap: "10px",
+            color: "#ff4d4f",
+            padding: "12px 0",
+          }}
+        >
+          <AlertOutlined />
+          <Text type="danger">{searchError}</Text>
+        </div>
+      ) : sortedResults.length > 0 ? (
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {sortedResults.map((match) => {
+            const existingBooking = bookings.find(
+              (b) => b.rideId === match.ride.id && b.status !== "CANCELLED",
+            );
+            const myBookingStatus = existingBooking
+              ? existingBooking.status
+              : null;
+
+            return (
+              <RideMatchCard
+                key={match.ride.id}
+                match={match}
+                bookingInProgress={bookingInProgressId === match.ride.id}
+                myBookingStatus={myBookingStatus}
+                onBook={handleBookRide}
+              />
+            );
+          })}
+        </div>
+      ) : (
+        <Empty
+          description={
+            searchResults.length > 0
+              ? "No matches found with current filter choices."
+              : "Enter origin and destination locations above to search for rides."
+          }
+        />
+      )}
+    </Card>
+  );
+}
+
 function MyBookingsCard({
   bookings,
   user,
@@ -368,25 +469,41 @@ function MyBookingsCard({
                       {booking.destination?.name?.split(",")[0]}
                     </Text>
                   </div>
-                  <Tag
-                    color={
-                      booking.status === "APPROVED" &&
-                      booking.rideStatus === "ONGOING"
+                  {(() => {
+                    const effectiveStatus =
+                      booking.status === "APPROVED"
+                        ? booking.rideStatus === "COMPLETED"
+                          ? "COMPLETED"
+                          : booking.rideStatus === "ONGOING"
+                            ? "ONGOING"
+                            : "APPROVED"
+                        : booking.status;
+
+                    const tagColor =
+                      effectiveStatus === "COMPLETED"
                         ? "success"
-                        : "processing"
-                    }
-                    style={{
-                      borderRadius: "999px",
-                      fontWeight: 700,
-                      fontSize: "0.8rem",
-                      padding: "4px 12px",
-                    }}
-                  >
-                    {booking.status === "APPROVED" &&
-                    booking.rideStatus === "ONGOING"
-                      ? "ONGOING"
-                      : booking.status}
-                  </Tag>
+                        : effectiveStatus === "ONGOING"
+                          ? "processing"
+                          : effectiveStatus === "APPROVED"
+                            ? "success"
+                            : effectiveStatus === "PENDING"
+                              ? "warning"
+                              : "error";
+
+                    return (
+                      <Tag
+                        color={tagColor}
+                        style={{
+                          borderRadius: "999px",
+                          fontWeight: 700,
+                          fontSize: "0.8rem",
+                          padding: "4px 12px",
+                        }}
+                      >
+                        {effectiveStatus}
+                      </Tag>
+                    );
+                  })()}
                 </div>
                 <div
                   style={{
@@ -470,17 +587,22 @@ export default function PassengerDashboard({ defaultView = "all" }) {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [searchDetails, setSearchDetails] = useState({
-    source: null,
-    destination: null,
-  });
-  const [searchResults, setSearchResults] = useState([]);
+  const savedSearch = readSessionSearch();
+
+  const [searchDetails, setSearchDetails] = useState(
+    () => savedSearch?.searchDetails || { source: null, destination: null },
+  );
+  const [searchResults, setSearchResults] = useState(
+    () => savedSearch?.searchResults || [],
+  );
   const [bookings, setBookings] = useState([]);
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [bookingInProgressId, setBookingInProgressId] = useState(null);
   const [searchError, setSearchError] = useState(null);
   const [showMapModal, setShowMapModal] = useState(false);
-  const [searchedRoute, setSearchedRoute] = useState(null);
+  const [searchedRoute, setSearchedRoute] = useState(
+    () => savedSearch?.searchedRoute || null,
+  );
 
   // Filters state
   const [sortBy, setSortBy] = useState("earliest");
@@ -491,40 +613,24 @@ export default function PassengerDashboard({ defaultView = "all" }) {
   const [verifiedFilter, setVerifiedFilter] = useState(false);
 
   // Map state
-  const [mapProps, setMapProps] = useState({
-    source: null,
-    destination: null,
-    routeCoords: null,
-  });
+  const [mapProps, setMapProps] = useState(
+    () =>
+      savedSearch?.mapProps || {
+        source: null,
+        destination: null,
+        routeCoords: null,
+      },
+  );
 
-  const fetchBookings = async () => {
+  const loadBookings = async () => {
     if (!user?.data?.id) return;
-    try {
-      const response = await requestAPI.getByPassenger(user.data.id);
-      const bookingsList = response?.data || response || [];
-
-      const enrichedBookings = await Promise.all(
-        bookingsList.map(async (booking) => {
-          try {
-            if (booking.rideId) {
-              const ride = await rideAPI.get(booking.rideId);
-              return { ...booking, rideStatus: ride?.status || "UNKNOWN" };
-            }
-          } catch (err) {
-            console.error("Failed to enrich booking:", booking.id, err);
-          }
-          return { ...booking, rideStatus: "UNKNOWN" };
-        }),
-      );
-      setBookings(enrichedBookings);
-    } catch (err) {
-      console.error("Failed to fetch passenger bookings:", err);
-    }
+    const list = await fetchPassengerBookings(user.data.id);
+    setBookings(list);
   };
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchBookings();
+    loadBookings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -548,7 +654,7 @@ export default function PassengerDashboard({ defaultView = "all" }) {
         title: "Booking Request Sent!",
         content:
           "Your travel request was created successfully. The driver will review it shortly.",
-        onOk: () => fetchBookings(),
+        onOk: () => loadBookings(),
       });
     } catch (err) {
       Modal.error({
@@ -562,7 +668,7 @@ export default function PassengerDashboard({ defaultView = "all" }) {
   };
 
   const handleCancelBooking = (requestId) =>
-    cancelPassengerBooking(requestId, fetchBookings);
+    cancelPassengerBooking(requestId, loadBookings);
 
   const clearFilters = () => {
     setSortBy("earliest");
@@ -579,17 +685,22 @@ export default function PassengerDashboard({ defaultView = "all" }) {
     setSearchResults(data.searchResults || []);
     setSearchDetails(data.searchDetails);
     setSearchedRoute(data.routeCoords);
-    if (data.routeCoords) {
-      setMapProps({
-        source: [data.searchDetails.source.lat, data.searchDetails.source.lng],
-        destination: [
-          data.searchDetails.destination.lat,
-          data.searchDetails.destination.lng,
-        ],
-        routeCoords: data.routeCoords,
-      });
-    }
+    const newMapProps = data.routeCoords
+      ? {
+          source: [
+            data.searchDetails.source.lat,
+            data.searchDetails.source.lng,
+          ],
+          destination: [
+            data.searchDetails.destination.lat,
+            data.searchDetails.destination.lng,
+          ],
+          routeCoords: data.routeCoords,
+        }
+      : { source: null, destination: null, routeCoords: null };
+    setMapProps(newMapProps);
     setLoadingSearch(false);
+    saveSearchToSession(data, newMapProps);
   };
 
   const handleSearchError = (err) => {
@@ -637,47 +748,14 @@ export default function PassengerDashboard({ defaultView = "all" }) {
           </Col>
 
           <Col xs={24} md={16} lg={17}>
-            <Card
-              title={
-                <span style={{ color: "#054752", fontWeight: 800 }}>
-                  Available Shared Rides ({sortedResults.length})
-                </span>
-              }
-              style={{ borderRadius: "16px", border: "1px solid #eef0f2" }}
-            >
-              {searchError ? (
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "10px",
-                    color: "#ff4d4f",
-                    padding: "12px 0",
-                  }}
-                >
-                  <AlertOutlined />
-                  <Text type="danger">{searchError}</Text>
-                </div>
-              ) : sortedResults.length > 0 ? (
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                  {sortedResults.map((match) => (
-                    <RideMatchCard
-                      key={match.ride.id}
-                      match={match}
-                      bookingInProgress={bookingInProgressId === match.ride.id}
-                      onBook={handleBookRide}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <Empty
-                  description={
-                    searchResults.length > 0
-                      ? "No matches found with current filter choices."
-                      : "Enter origin and destination locations above to search for rides."
-                  }
-                />
-              )}
-            </Card>
+            <SearchResultsCard
+              sortedResults={sortedResults}
+              searchError={searchError}
+              searchResults={searchResults}
+              bookings={bookings}
+              bookingInProgressId={bookingInProgressId}
+              handleBookRide={handleBookRide}
+            />
           </Col>
         </Row>
       ) : (
@@ -685,7 +763,8 @@ export default function PassengerDashboard({ defaultView = "all" }) {
           bookings={bookings.filter(
             (b) =>
               b.status === "PENDING" ||
-              (b.status === "APPROVED" && b.rideStatus === "ACTIVE"),
+              b.status === "APPROVED" ||
+              b.status === "COMPLETED",
           )}
           user={user}
           handleCancelBooking={handleCancelBooking}

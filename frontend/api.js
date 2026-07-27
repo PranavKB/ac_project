@@ -158,6 +158,21 @@ export const messageAPI = {
   },
 };
 
+export const ratingAPI = {
+  create: async (ratingData) => {
+    const res = await API.post("/ratings", ratingData);
+    return res.data;
+  },
+  getByRide: async (rideId) => {
+    const res = await API.get(`/ratings/ride/${rideId}`);
+    return res.data;
+  },
+  getByUser: async (userId) => {
+    const res = await API.get(`/ratings/user/${userId}`);
+    return res.data;
+  },
+};
+
 export const userAPI = {
   get: async (id) => {
     const res = await API.get(`/users/${id}`);

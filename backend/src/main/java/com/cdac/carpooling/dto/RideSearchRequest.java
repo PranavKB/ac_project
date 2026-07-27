@@ -12,6 +12,8 @@ public class RideSearchRequest {
 
     @Size(min = 2, max = 2, message = "Destination coordinates must be exactly [lat, lng]")
     private List<Double> destinationCoords;
+
+    private String departureDate;
 }
 
 
