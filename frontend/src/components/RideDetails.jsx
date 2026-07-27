@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { rideAPI, requestAPI, messageAPI } from "../../api";
 import { calculateRouteDistance } from "../utils/helpers";
+import { fetchRideRatings, submitRating } from "../utils/ratingActions";
 import useAuth from "../context/AuthContext/useAuth";
+import RatingModal from "./RatingModal";
 import {
   Card,
   Button,
@@ -151,7 +153,13 @@ function RouteTimelineCard({
   );
 }
 
-function DriverDetailsCard({ driverInitial, driverName }) {
+function DriverDetailsCard({
+  driverInitial,
+  driverName,
+  showRateButton,
+  alreadyRatedDriver,
+  onRateDriver,
+}) {
   return (
     <Card style={{ borderRadius: "16px", border: "1px solid #eef0f2" }}>
       <div
@@ -211,25 +219,52 @@ function DriverDetailsCard({ driverInitial, driverName }) {
         </div>
         <div> TOYOTA Innova - Grey</div>
       </Space>
-      <Button
-        type="default"
-        shape="round"
-        icon={<MessageOutlined />}
-        onClick={() =>
-          Modal.info({
-            title: "Contact",
-            content: `Contacting ${driverName}...`,
-          })
-        }
-        style={{ borderColor: "#00aff5", color: "#00aff5", fontWeight: 700 }}
-      >
-        Contact {driverName}
-      </Button>
+      <Space wrap>
+        <Button
+          type="default"
+          shape="round"
+          icon={<MessageOutlined />}
+          onClick={() =>
+            Modal.info({
+              title: "Contact",
+              content: `Contacting ${driverName}...`,
+            })
+          }
+          style={{ borderColor: "#00aff5", color: "#00aff5", fontWeight: 700 }}
+        >
+          Contact {driverName}
+        </Button>
+        {showRateButton &&
+          (alreadyRatedDriver ? (
+            <Tag
+              color="blue"
+              style={{ padding: "4px 12px", borderRadius: "999px" }}
+            >
+              ✓ You rated this driver
+            </Tag>
+          ) : (
+            <Button
+              type="primary"
+              ghost
+              shape="round"
+              icon={<StarFilled />}
+              onClick={onRateDriver}
+              style={{ fontWeight: 700 }}
+            >
+              Rate {driverName}
+            </Button>
+          ))}
+      </Space>
     </Card>
   );
 }
 
-function PassengersCard({ passengers }) {
+function PassengersCard({
+  passengers,
+  showRatingActions,
+  hasRated,
+  onRatePassenger,
+}) {
   return (
     <Card
       title={
@@ -275,17 +310,31 @@ function PassengersCard({ passengers }) {
                   {p.destination?.name || "Unknown Destination"}
                 </div>
               </div>
-              <Tag
-                color={p.status === "APPROVED" ? "success" : "warning"}
-                style={{
-                  borderRadius: "999px",
-                  padding: "3px 10px",
-                  float: "right",
-                  marginLeft: "auto",
-                }}
-              >
-                {p.status}
-              </Tag>
+              <Space style={{ marginLeft: "auto" }}>
+                <Tag
+                  color={p.status === "APPROVED" ? "success" : "warning"}
+                  style={{ borderRadius: "999px", padding: "3px 10px" }}
+                >
+                  {p.status}
+                </Tag>
+                {showRatingActions &&
+                  p.status === "APPROVED" &&
+                  (hasRated(p.passengerId) ? (
+                    <Tag color="blue" style={{ borderRadius: "999px" }}>
+                      ✓ Rated
+                    </Tag>
+                  ) : (
+                    <Button
+                      size="small"
+                      type="primary"
+                      ghost
+                      icon={<StarFilled />}
+                      onClick={() => onRatePassenger(p)}
+                    >
+                      Rate
+                    </Button>
+                  ))}
+              </Space>
             </div>
           ))}
         </div>
@@ -705,6 +754,12 @@ function GridDetailsLayout({
   bookingInProgress,
   distanceKm,
   co2Kg,
+  showDriverRateButton,
+  alreadyRatedDriver,
+  onRateDriver,
+  showPassengerRatingActions,
+  hasRated,
+  onRatePassenger,
 }) {
   return (
     <Row gutter={[32, 32]}>
@@ -722,8 +777,16 @@ function GridDetailsLayout({
           <DriverDetailsCard
             driverInitial={driverInitial}
             driverName={driverName}
+            showRateButton={showDriverRateButton}
+            alreadyRatedDriver={alreadyRatedDriver}
+            onRateDriver={onRateDriver}
           />
-          <PassengersCard passengers={passengers} />
+          <PassengersCard
+            passengers={passengers}
+            showRatingActions={showPassengerRatingActions}
+            hasRated={hasRated}
+            onRatePassenger={onRatePassenger}
+          />
           {ride.status === "ONGOING" && (
             <TripChatCard
               messages={messages}
@@ -960,6 +1023,13 @@ export default function RideDetails() {
   const [newMessageText, setNewMessageText] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
 
+  // Rating states
+  const [ratings, setRatings] = useState([]);
+  const [ratingTarget, setRatingTarget] = useState(null);
+  const [submittingRating, setSubmittingRating] = useState(false);
+
+  const fetchRatings = () => fetchRideRatings(id, setRatings);
+
   const fetchRideData = async () => {
     setLoading(true);
     setError(null);
@@ -968,6 +1038,7 @@ export default function RideDetails() {
       setRide(resp?.data || resp);
       const reqResp = await requestAPI.getByRide(id).catch(() => null);
       setPassengers(reqResp?.data || reqResp || []);
+      fetchRatings();
     } catch {
       setError("Failed to load ride details.");
     } finally {
@@ -1004,6 +1075,19 @@ export default function RideDetails() {
       setSendingMessage(false);
     }
   };
+
+  const hasRated = (reviewedUserId) =>
+    ratings.some(
+      (r) =>
+        r.reviewerId === user?.data?.id && r.reviewedUserId === reviewedUserId,
+    );
+
+  const handleSubmitRating = (values, form) =>
+    submitRating(ride, user, ratingTarget, values, form, {
+      setSubmittingRating,
+      setRatingTarget,
+      fetchRatings,
+    });
 
   useEffect(() => {
     if (id) {
@@ -1073,6 +1157,12 @@ export default function RideDetails() {
       },
     );
 
+  const rideCompleted = ride.status === "COMPLETED";
+  const showDriverRateButton =
+    !isDriver && rideCompleted && bookingStatus === "APPROVED";
+  const alreadyRatedDriver = hasRated(ride.driverId);
+  const showPassengerRatingActions = isDriver && rideCompleted;
+
   return (
     <div style={{ maxWidth: "1150px", margin: "0 auto", padding: "30px 24px" }}>
       <Button
@@ -1121,6 +1211,25 @@ export default function RideDetails() {
         bookingInProgress={bookingInProgress}
         distanceKm={distanceKm}
         co2Kg={co2Kg}
+        showDriverRateButton={showDriverRateButton}
+        alreadyRatedDriver={alreadyRatedDriver}
+        onRateDriver={() =>
+          setRatingTarget({ id: ride.driverId, name: driverName })
+        }
+        showPassengerRatingActions={showPassengerRatingActions}
+        hasRated={hasRated}
+        onRatePassenger={(p) =>
+          setRatingTarget({
+            id: p.passengerId,
+            name: p.passengerName || "Passenger",
+          })
+        }
+      />
+      <RatingModal
+        target={ratingTarget}
+        onCancel={() => setRatingTarget(null)}
+        onSubmit={handleSubmitRating}
+        submitting={submittingRating}
       />
     </div>
   );
