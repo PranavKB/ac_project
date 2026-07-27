@@ -1,155 +1,230 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import useAuth from "../../context/AuthContext/useAuth";
-import "./Navbar.scss";
-import { LeafIcon, StarIcon, SwitchIcon, SunIcon, MoonIcon } from "../icons";
+import { Layout, Button, Avatar, Dropdown, Space, Tooltip, Badge } from "antd";
+import {
+  PlusOutlined,
+  SearchOutlined,
+  UserOutlined,
+  LogoutOutlined,
+  StarFilled,
+  CarFilled,
+} from "@ant-design/icons";
+
+const { Header } = Layout;
 
 export default function Navbar() {
-  const { user, activeRole, switchRole, logout } = useAuth();
+  const { user, activeRole, switchRole, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("theme") || "light";
-  });
-
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("theme", theme);
-  }, [theme]);
+    if (user?.data?.id) {
+      refreshUser();
+    }
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (location.pathname === "/login" || location.pathname === "/register") {
     return null;
   }
 
   if (!user || !user.data) {
-    return null; // Don't show navbar if not logged in
+    return null;
   }
 
-  const { name, totalCarbonSavedKg, reputationProfile, roles } = user.data;
-  const rating = reputationProfile?.trustScore || 0;
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-  };
+  const { name, totalCarbonSavedKg, reputationProfile } = user.data;
+  const rating = reputationProfile?.trustScore || 80.0;
 
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
 
-  const handleRoleChange = (e) => {
-    const newRole = e.target.value;
-    switchRole(newRole);
-    if (newRole === "DRIVER") {
-      navigate("/driver");
-    } else if (newRole === "PASSENGER") {
-      navigate("/passenger");
-    } else if (newRole === "ADMIN") {
-      navigate("/admin");
-    }
+  const handleFindRide = () => {
+    switchRole("PASSENGER");
+    navigate("/passenger");
   };
 
-  const isPassenger = activeRole === "PASSENGER";
-  const isDriver = activeRole === "DRIVER";
-  const isDarkTheme = isPassenger || isDriver;
-
-  const handleRoleToggle = () => {
-    const nextRole = activeRole === "PASSENGER" ? "DRIVER" : "PASSENGER";
-    switchRole(nextRole);
-    if (nextRole === "DRIVER") {
-      navigate("/driver");
-    } else {
-      navigate("/passenger");
-    }
+  const handleOfferRide = () => {
+    switchRole("DRIVER");
+    navigate("/driver");
   };
+
+  const isPassenger = activeRole === "PASSENGER" || !activeRole;
+
+  const menuItems = [
+    {
+      key: "name-header",
+      label: (
+        <div
+          style={{
+            padding: "4px 12px",
+            borderBottom: "1px solid #f0f0f0",
+            pointerEvents: "none",
+          }}
+        >
+          <strong>{name}</strong>
+          <div style={{ fontSize: "0.8rem", color: "#8c8c8c" }}>
+            {isPassenger ? "Passenger Mode" : "Driver Mode"}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "profile",
+      icon: <UserOutlined />,
+      label: "My Profile",
+      onClick: () => navigate("/profile"),
+    },
+    {
+      key: "switch-role",
+      icon: isPassenger ? <PlusOutlined /> : <SearchOutlined />,
+      label: isPassenger ? "Switch to Driver" : "Switch to Passenger",
+      onClick: isPassenger ? handleOfferRide : handleFindRide,
+    },
+    {
+      key: "divider-1",
+      type: "divider",
+    },
+    {
+      key: "logout",
+      icon: <LogoutOutlined style={{ color: "#ff4d4f" }} />,
+      label: <span style={{ color: "#ff4d4f" }}>Logout</span>,
+      onClick: handleLogout,
+    },
+  ];
 
   return (
-    <nav className={`navbar ${isDarkTheme ? "passenger-theme" : ""}`}>
-      <div className="navbar-left">
-        <h1 className="brand">Carpool</h1>
-        <div className="role-badge">
-          {isPassenger
-            ? "PASSENGER VIEW"
-            : isDriver
-              ? "DRIVER VIEW"
-              : activeRole
-                ? activeRole.charAt(0).toUpperCase() +
-                  activeRole.slice(1).toLowerCase()
-                : "User"}
-        </div>
-      </div>
-
-      {!isDarkTheme && (
-        <div className="navbar-center">
-          <div className="stat">
-            <span className="stat-value">{totalCarbonSavedKg} Kg</span>
-            <span className="stat-label">CO2 saved</span>
-          </div>
-          <div className="stat">
-            <span className="stat-value">{rating}/100</span>
-            <span className="stat-label">Rating</span>
-          </div>
-        </div>
-      )}
-
-      <div className="navbar-right">
-        {isDarkTheme && (
-          <div className="passenger-nav-badges">
-            <div className="co2-badge">
-              <LeafIcon />
-              <span>
-                {totalCarbonSavedKg ? totalCarbonSavedKg.toFixed(1) : "0.0"} KG
-                CO₂ SAVED
-              </span>
-            </div>
-            <div className="rating-badge">
-              <StarIcon />
-              <span>{rating ? rating.toFixed(1) : "80.0"}/100</span>
-            </div>
-          </div>
-        )}
-
-        {isDarkTheme && (
-          <button
-            className="theme-toggle-btn"
-            onClick={toggleTheme}
-            title="Toggle light/dark mode"
-          >
-            {theme === "dark" ? <SunIcon /> : <MoonIcon />}
-          </button>
-        )}
-
-        <span className="greeting">
-          Hello, <strong>{name}</strong>
+    <Header
+      style={{
+        background: "#ffffff",
+        padding: "0 24px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        borderBottom: "1px solid #eef0f2",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+        position: "sticky",
+        top: 0,
+        zIndex: 1000,
+        height: "64px",
+      }}
+    >
+      {/* Left logo and branding */}
+      <div
+        style={{ display: "flex", alignItems: "center", cursor: "pointer" }}
+        onClick={handleFindRide}
+      >
+        <CarFilled
+          style={{ fontSize: "1.5rem", color: "#00aff5", marginRight: 4 }}
+        />
+        <span
+          style={{
+            fontSize: "1.5rem",
+            fontWeight: 800,
+            color: "#00aff5",
+            letterSpacing: "-0.5px",
+          }}
+        >
+          CarPool
         </span>
+      </div>
 
-        {isDarkTheme ? (
-          <button className="switch-role-btn" onClick={handleRoleToggle}>
-            <SwitchIcon />
-            {isPassenger ? "Switch to Driver" : "Switch to Passenger"}
-          </button>
+      {/* Right actions and profile */}
+      <Space size="large" align="center">
+        {isPassenger ? (
+          <Button
+            type="default"
+            shape="round"
+            icon={<PlusOutlined />}
+            onClick={handleOfferRide}
+            style={{
+              borderColor: "#00aff5",
+              color: "#00aff5",
+              fontWeight: 600,
+              fontSize: "0.9rem",
+            }}
+          >
+            Offer a ride
+          </Button>
         ) : (
-          roles &&
-          roles.length > 0 && (
-            <select
-              className="role-dropdown"
-              value={activeRole || ""}
-              onChange={handleRoleChange}
-            >
-              {roles.map((role) => (
-                <option key={role} value={role}>
-                  {role.charAt(0).toUpperCase() + role.slice(1).toLowerCase()}
-                </option>
-              ))}
-            </select>
-          )
+          <Button
+            type="default"
+            shape="round"
+            icon={<SearchOutlined />}
+            onClick={handleFindRide}
+            style={{
+              borderColor: "#00aff5",
+              color: "#00aff5",
+              fontWeight: 600,
+              fontSize: "0.9rem",
+            }}
+          >
+            Find a ride
+          </Button>
         )}
 
-        <button className="logout-btn" onClick={handleLogout}>
-          Logout
-        </button>
-      </div>
-    </nav>
+        {/* Flag Indicator */}
+        <Tooltip title="India Region">
+          <span
+            style={{
+              fontSize: "1.4rem",
+              cursor: "default",
+              userSelect: "none",
+            }}
+          >
+            🇮🇳
+          </span>
+        </Tooltip>
+
+        {/* CO2 and Rating Badges */}
+        <Space size="small">
+          <Tooltip title="Carbon Saved">
+            <Badge
+              count={`${totalCarbonSavedKg ? totalCarbonSavedKg.toFixed(1) : "0.0"} kg`}
+              style={{ backgroundColor: "#52c41a", fontWeight: 600 }}
+            />
+          </Tooltip>
+          <Tooltip title="Trust Score">
+            <Badge
+              count={
+                <Space size={2} style={{ color: "#faad14", fontWeight: 600 }}>
+                  <StarFilled style={{ fontSize: "0.75rem" }} />
+                  {rating ? rating.toFixed(1) : "80.0"}
+                </Space>
+              }
+              style={{
+                backgroundColor: "#fffbe6",
+                color: "#d48806",
+                border: "1px solid #ffe58f",
+                padding: "0 6px",
+                height: "20px",
+                lineHeight: "18px",
+              }}
+            />
+          </Tooltip>
+        </Space>
+
+        {/* User avatar with dropdown */}
+        <Dropdown
+          menu={{ items: menuItems }}
+          placement="bottomRight"
+          trigger={["click"]}
+        >
+          <Avatar
+            style={{
+              backgroundColor: "#00aff5",
+              cursor: "pointer",
+              verticalAlign: "middle",
+              fontWeight: 600,
+            }}
+            size="large"
+            icon={<UserOutlined />}
+          >
+            {name ? name.charAt(0).toUpperCase() : "U"}
+          </Avatar>
+        </Dropdown>
+      </Space>
+    </Header>
   );
 }

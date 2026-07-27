@@ -78,13 +78,18 @@ export default function MapComponent({
   const defaultCenter = [12.9716, 77.5946];
 
   // Calculate bounding box to fit path
+  const isValidCoord = (c) =>
+    Array.isArray(c) && c.length >= 2 && !isNaN(c[0]) && !isNaN(c[1]);
   let bounds = [];
-  if (source) bounds.push(source);
-  if (destination) bounds.push(destination);
+  if (source && isValidCoord(source)) bounds.push(source);
+  if (destination && isValidCoord(destination)) bounds.push(destination);
   if (routeCoords && routeCoords.length > 0) {
-    routeCoords.forEach((c) => bounds.push(c));
+    routeCoords.forEach((c) => {
+      if (isValidCoord(c)) bounds.push(c);
+    });
   }
-  if (currentLocation) bounds.push(currentLocation);
+  if (currentLocation && isValidCoord(currentLocation))
+    bounds.push(currentLocation);
 
   const center = source ? source : defaultCenter;
 

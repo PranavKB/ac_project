@@ -1,4 +1,3 @@
-/* eslint-disable max-lines-per-function */
 import { useState, useEffect, useRef } from "react";
 import { socketService } from "../../socket/socketService";
 import { messageAPI } from "../../../api";

@@ -46,6 +46,8 @@ public class RideController {
         ride.setDriverName(request.getDriverName());
         ride.setTotalSeats(request.getTotalSeats());
         ride.setAvailableSeats(request.getTotalSeats());
+        ride.setEstimatedDurationMinutes(request.getEstimatedDurationMinutes());
+        ride.setPricePerSeat(request.getPricePerSeat());
         ride.setStatus("ACTIVE");
 
         if (request.getDepartureTime() != null && !request.getDepartureTime().isBlank()) {
@@ -205,6 +207,17 @@ public class RideController {
         ride.setExecutionDetails(details);
 
         Ride saved = rideRepository.save(ride);
+
+        // Credit the driver's cumulative CO2 total
+        carbonService.creditCarbonToDriver(ride.getDriverId(), offset.getNetReducedCo2Kg());
+
+        // Credit each passenger's cumulative CO2 total
+        if (ride.getPassengerIds() != null) {
+            double passengerCo2 = carbonService.calculatePassengerOffset(distanceKm);
+            for (String passengerId : ride.getPassengerIds()) {
+                carbonService.creditCarbonToUser(passengerId, passengerCo2);
+            }
+        }
 
         return ApiResponse.success(saved, "Ride completed successfully");
 

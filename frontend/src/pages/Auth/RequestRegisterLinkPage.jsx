@@ -1,23 +1,24 @@
 import { useState } from "react";
 import { authAPI } from "../../../api";
-import "./Register.scss";
 import { useNavigate } from "react-router-dom";
+import { Card, Form, Input, Button, Alert, Typography, Space } from "antd";
+import { MailOutlined } from "@ant-design/icons";
+
+const { Title, Paragraph, Text } = Typography;
 
 export default function RequestRegisterLinkPage() {
-  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const onFinish = async (values) => {
     setLoading(true);
     setError("");
     setSuccessMsg("");
 
     try {
-      const resp = await authAPI.requestRegisterLink(email);
+      const resp = await authAPI.requestRegisterLink(values.email);
       setSuccessMsg(
         resp.message ||
           "Registration link sent to your email! Please check your inbox.",
@@ -49,60 +50,123 @@ export default function RequestRegisterLinkPage() {
   };
 
   return (
-    <div className="register-container">
-      <div className="register-card">
-        <div className="register-header">
-          <h2>Register</h2>
-          <p>Enter your email to receive a registration link</p>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "80vh",
+        padding: "0 24px",
+      }}
+    >
+      <Card
+        style={{
+          width: "100%",
+          maxWidth: "400px",
+          borderRadius: "16px",
+          border: "1px solid #eef0f2",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.02)",
+        }}
+      >
+        <div style={{ textAlign: "center", marginBottom: "24px" }}>
+          <Title
+            level={2}
+            style={{ color: "#054752", fontWeight: 800, margin: 0 }}
+          >
+            Register
+          </Title>
+          <Paragraph type="secondary" style={{ margin: "4px 0 0" }}>
+            Enter your email to receive a registration link
+          </Paragraph>
         </div>
 
         {successMsg ? (
-          <div
-            className="success-box"
-            style={{
-              background: "#e8f5e9",
-              color: "#2e7d32",
-              padding: "16px",
-              borderRadius: "6px",
-              textAlign: "center",
-              margin: "16px 0",
-            }}
-          >
-            <h3>Link Sent!</h3>
-            <p>{successMsg}</p>
-            <p style={{ fontSize: "14px", marginTop: "8px", color: "#555" }}>
-              Check your email inbox and click on the registration link to
-              complete your account setup.
-            </p>
+          <div style={{ textAlign: "center", padding: "16px 0" }}>
+            <Alert
+              message={<span style={{ fontWeight: 700 }}>Link Sent!</span>}
+              description={
+                <Space orientation="vertical" style={{ marginTop: "8px" }}>
+                  <Text>{successMsg}</Text>
+                  <Text type="secondary" style={{ fontSize: "0.85rem" }}>
+                    Check your email inbox and click on the registration link to
+                    complete your account setup.
+                  </Text>
+                </Space>
+              }
+              type="success"
+              showIcon
+              style={{ borderRadius: "8px" }}
+            />
+            <Button
+              type="default"
+              size="large"
+              block
+              onClick={() => navigate("/login")}
+              style={{
+                marginTop: "24px",
+                borderRadius: "12px",
+                fontWeight: 600,
+              }}
+            >
+              Back to Login
+            </Button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="register-form">
-            <div className="form-group">
-              <label>Email Address</label>
-              <input
-                type="email"
-                name="email"
-                className="input-field"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+          <Form layout="vertical" onFinish={onFinish} requiredMark={false}>
+            <Form.Item
+              name="email"
+              label="Email Address"
+              rules={[
+                { required: true, message: "Please enter your email!" },
+                { type: "email", message: "Please enter a valid email!" },
+              ]}
+            >
+              <Input
+                size="large"
+                prefix={<MailOutlined style={{ color: "#708c91" }} />}
                 placeholder="you@example.com"
-                required
               />
-            </div>
+            </Form.Item>
 
-            {error && <div className="error-box">{error}</div>}
+            {error && (
+              <Alert
+                message={error}
+                type="error"
+                showIcon
+                style={{ marginBottom: "16px", borderRadius: "8px" }}
+              />
+            )}
 
-            <button type="submit" className="register-btn" disabled={loading}>
-              {loading ? "Sending link..." : "Send Registration Link"}
-            </button>
-          </form>
+            <Form.Item style={{ marginTop: "24px", marginBottom: "12px" }}>
+              <Button
+                type="primary"
+                htmlType="submit"
+                size="large"
+                block
+                loading={loading}
+                style={{ borderRadius: "12px", fontWeight: 600 }}
+              >
+                Send Registration Link
+              </Button>
+            </Form.Item>
+          </Form>
         )}
 
-        <div className="register-footer">
-          Already have an account?{" "}
-          <span onClick={() => navigate("/login")}>Login</span>
-        </div>
-      </div>
+        {!successMsg && (
+          <div
+            style={{ textAlign: "center", marginTop: "16px", color: "#708c91" }}
+          >
+            Already registered?{" "}
+            <Button
+              type="link"
+              onClick={() => navigate("/login")}
+              style={{ padding: 0, fontWeight: 600, color: "#00aff5" }}
+            >
+              Login
+            </Button>
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

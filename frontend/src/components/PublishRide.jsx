@@ -2,127 +2,55 @@ import { useState } from "react";
 import LocationInput from "./LocationInput";
 import { rideAPI, routeAPI } from "../../api";
 import useAuth from "../context/AuthContext/useAuth";
-
-const rideDetailsInitialState = {
-  totalSeats: 4,
-  departureTime: "",
-  source: null,
-  destination: null,
-};
-
-function RideForm({
-  rideDetails,
-  setRideDetails,
-  resetKey,
-  isPreviewing,
-  isPublishing,
-  handlePreview,
-  handleSubmit,
-}) {
-  return (
-    <form onSubmit={handleSubmit}>
-      <div className="form-group">
-        <label>Source Address</label>
-        <LocationInput
-          key={`source-${resetKey}`}
-          placeholder="Enter source location..."
-          onSelect={(location) =>
-            setRideDetails((prev) => ({ ...prev, source: location }))
-          }
-        />
-      </div>
-
-      <div className="form-group">
-        <label>Destination Address</label>
-        <LocationInput
-          key={`dest-${resetKey}`}
-          placeholder="Enter destination location..."
-          onSelect={(location) =>
-            setRideDetails((prev) => ({ ...prev, destination: location }))
-          }
-        />
-      </div>
-
-      <div className="form-row">
-        <div className="form-group flex-1">
-          <label>Seats Available</label>
-          <input
-            type="number"
-            min="1"
-            max="8"
-            value={rideDetails.totalSeats}
-            onChange={(e) =>
-              setRideDetails((prev) => ({
-                ...prev,
-                totalSeats: parseInt(e.target.value, 10) || 1,
-              }))
-            }
-          />
-        </div>
-        <div className="form-group flex-1-5">
-          <label>Departure Time</label>
-          <input
-            type="datetime-local"
-            value={rideDetails.departureTime}
-            onChange={(e) =>
-              setRideDetails((prev) => ({
-                ...prev,
-                departureTime: e.target.value,
-              }))
-            }
-            required
-          />
-        </div>
-      </div>
-
-      <div className="form-actions-row">
-        <button
-          type="button"
-          className="btn-db-action outline flex-1"
-          onClick={handlePreview}
-          disabled={
-            !rideDetails.source || !rideDetails.destination || isPreviewing
-          }
-        >
-          {isPreviewing ? "Loading Preview..." : "Preview Route"}
-        </button>
-        <button
-          type="submit"
-          disabled={isPublishing}
-          className="btn-db-action primary flex-1-2"
-        >
-          {isPublishing ? "Publishing..." : "Publish Trip"}
-        </button>
-      </div>
-    </form>
-  );
-}
+import {
+  Card,
+  Form,
+  InputNumber,
+  DatePicker,
+  Button,
+  Space,
+  Modal,
+  Row,
+  Col,
+} from "antd";
+import {
+  CarOutlined,
+  CalendarOutlined,
+  ClockCircleOutlined,
+  DollarOutlined,
+} from "@ant-design/icons";
 
 export default function PublishRide({
   onPublishSuccess,
   onMapUpdate,
   isEmbed = false,
 }) {
-  const [rideDetails, setRideDetails] = useState(rideDetailsInitialState);
+  const [form] = Form.useForm();
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [resetKey, setResetKey] = useState(0);
+  const [sourceLocation, setSourceLocation] = useState(null);
+  const [destinationLocation, setDestinationLocation] = useState(null);
 
   const { user } = useAuth();
 
   const handlePreview = async () => {
-    const { source, destination } = rideDetails;
-    if (!source || !destination) {
-      alert("Please select both source and destination first.");
+    if (!sourceLocation || !destinationLocation) {
+      Modal.warning({
+        title: "Missing Locations",
+        content: "Please select both origin and destination locations first.",
+      });
       return;
     }
     setIsPreviewing(true);
     try {
-      const routeCoords = await routeAPI.fetch(source, destination);
+      const routeCoords = await routeAPI.fetch(
+        sourceLocation,
+        destinationLocation,
+      );
       if (onMapUpdate) {
         onMapUpdate({
-          source: [source.lat, source.lng],
-          destination: [destination.lat, destination.lng],
+          source: [sourceLocation.lat, sourceLocation.lng],
+          destination: [destinationLocation.lat, destinationLocation.lng],
           routeCoords,
         });
       }
@@ -133,36 +61,46 @@ export default function PublishRide({
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const { source, destination, totalSeats, departureTime } = rideDetails;
-
-    if (!source || !destination || !departureTime) {
-      alert("Please fill out all required fields!");
+  const onFinish = async (values) => {
+    if (!sourceLocation || !destinationLocation) {
+      Modal.error({
+        title: "Validation Error",
+        content: "Please select valid origin and destination locations.",
+      });
       return;
     }
 
     setIsPublishing(true);
     try {
+      const durationMins = parseInt(values.estimatedDurationMinutes, 10) || 0;
+      const departureISO = values.departureTime.toISOString();
+
       const requestBody = {
         driverId: user.data.id,
         driverName: user.data.name,
-        totalSeats: parseInt(totalSeats, 10) || 1,
-        departureTime: `${departureTime}:00Z`,
+        totalSeats: parseInt(values.totalSeats, 10) || 1,
+        departureTime: departureISO,
+        estimatedDurationMinutes: durationMins,
+        pricePerSeat: values.pricePerSeat
+          ? parseFloat(values.pricePerSeat)
+          : null,
         source: {
-          name: source.name,
-          location: {
-            type: "Point",
-            coordinates: [parseFloat(source.lat), parseFloat(source.lng)],
-          },
-        },
-        destination: {
-          name: destination.name,
+          name: sourceLocation.name,
           location: {
             type: "Point",
             coordinates: [
-              parseFloat(destination.lat),
-              parseFloat(destination.lng),
+              parseFloat(sourceLocation.lat),
+              parseFloat(sourceLocation.lng),
+            ],
+          },
+        },
+        destination: {
+          name: destinationLocation.name,
+          location: {
+            type: "Point",
+            coordinates: [
+              parseFloat(destinationLocation.lat),
+              parseFloat(destinationLocation.lng),
             ],
           },
         },
@@ -170,32 +108,136 @@ export default function PublishRide({
 
       const response = await rideAPI.create(requestBody);
       const newRide = response?.data || response;
-      alert("Ride published successfully!");
 
-      setRideDetails(rideDetailsInitialState);
-      setResetKey((prev) => prev + 1);
+      Modal.success({
+        title: "Ride Published!",
+        content:
+          "Your ride was created successfully and is now active for passenger matching.",
+      });
+
+      form.resetFields();
+      setSourceLocation(null);
+      setDestinationLocation(null);
 
       if (onPublishSuccess) {
         await onPublishSuccess(newRide);
       }
     } catch (error) {
       console.error("Error publishing ride:", error);
-      alert("Failed to publish ride.");
+      Modal.error({
+        title: "Failed to Publish",
+        content: "There was an error publishing your ride. Please try again.",
+      });
     } finally {
       setIsPublishing(false);
     }
   };
 
   const formContent = (
-    <RideForm
-      rideDetails={rideDetails}
-      setRideDetails={setRideDetails}
-      resetKey={resetKey}
-      isPreviewing={isPreviewing}
-      isPublishing={isPublishing}
-      handlePreview={handlePreview}
-      handleSubmit={handleSubmit}
-    />
+    <Form
+      form={form}
+      layout="vertical"
+      initialValues={{ totalSeats: 4 }}
+      onFinish={onFinish}
+    >
+      <Form.Item label="Origin Address" required>
+        <LocationInput
+          placeholder="Enter origin location..."
+          onSelect={setSourceLocation}
+        />
+      </Form.Item>
+
+      <Form.Item label="Destination Address" required>
+        <LocationInput
+          placeholder="Enter destination location..."
+          onSelect={setDestinationLocation}
+        />
+      </Form.Item>
+
+      <Row gutter={16}>
+        <Col span={10}>
+          <Form.Item
+            name="totalSeats"
+            label="Seats Available"
+            rules={[{ required: true, message: "Please enter total seats" }]}
+          >
+            <InputNumber
+              min={1}
+              max={8}
+              style={{ width: "100%" }}
+              prefix={<CarOutlined />}
+            />
+          </Form.Item>
+        </Col>
+        <Col span={14}>
+          <Form.Item
+            name="departureTime"
+            label="Departure Date & Time"
+            rules={[
+              { required: true, message: "Please select departure time" },
+            ]}
+          >
+            <DatePicker
+              showTime
+              format="YYYY-MM-DD HH:mm"
+              placeholder="Select date & time"
+              style={{ width: "100%" }}
+              prefix={<CalendarOutlined />}
+            />
+          </Form.Item>
+        </Col>
+      </Row>
+
+      <Row gutter={16}>
+        <Col span={12}>
+          <Form.Item
+            name="estimatedDurationMinutes"
+            label="Estimated Duration (minutes)"
+            rules={[
+              { required: true, message: "Please enter estimated duration" },
+            ]}
+          >
+            <InputNumber
+              min={1}
+              max={1440}
+              style={{ width: "100%" }}
+              placeholder="e.g. 90"
+              prefix={<ClockCircleOutlined />}
+            />
+          </Form.Item>
+        </Col>
+        <Col span={12}>
+          <Form.Item
+            name="pricePerSeat"
+            label="Price per Seat (₹)"
+            rules={[{ required: true, message: "Please enter price per seat" }]}
+          >
+            <InputNumber
+              min={0}
+              style={{ width: "100%" }}
+              placeholder="e.g. 500"
+              prefix={<DollarOutlined />}
+            />
+          </Form.Item>
+        </Col>
+      </Row>
+
+      <Form.Item style={{ marginTop: "16px", marginBottom: 0 }}>
+        <Space style={{ width: "100%", justifyContent: "flex-end" }}>
+          <Button
+            type="default"
+            onClick={handlePreview}
+            loading={isPreviewing}
+            disabled={!sourceLocation || !destinationLocation}
+          >
+            Preview Route
+          </Button>
+          <Button type="primary" htmlType="submit" loading={isPublishing}>
+            Publish Trip
+          </Button>
+        </Space>
+      </Form.Item>
+    </Form>
   );
 
   if (isEmbed) {
@@ -203,11 +245,17 @@ export default function PublishRide({
   }
 
   return (
-    <div className="dashboard-theme publish-ride-card">
-      <div className="dashboard-card">
-        <h2>Publish a Ride</h2>
+    <div style={{ maxWidth: "600px", margin: "40px auto", padding: "0 24px" }}>
+      <Card
+        title={
+          <span style={{ color: "#054752", fontWeight: 800 }}>
+            Publish a Ride
+          </span>
+        }
+        style={{ borderRadius: "16px", border: "1px solid #eef0f2" }}
+      >
         {formContent}
-      </div>
+      </Card>
     </div>
   );
 }
