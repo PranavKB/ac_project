@@ -10,4 +10,6 @@ public interface RideRepository extends MongoRepository<Ride, String> {
     List<Ride> findByStatus(String status);
 
     List<Ride> findByDriverId(String driverId);
+
+    long countByStatus(String status);
 }

@@ -6,6 +6,7 @@ import com.cdac.carpooling.model.Rating;
 import com.cdac.carpooling.model.Ride;
 import com.cdac.carpooling.repository.RatingRepository;
 import com.cdac.carpooling.repository.RideRepository;
+import com.cdac.carpooling.service.ReputationService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class RatingController {
 
     private final RatingRepository ratingRepository;
     private final RideRepository rideRepository;
+    private final ReputationService reputationService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<Rating>> submitRating(@Valid @RequestBody RatingRequest request) {
@@ -55,6 +57,7 @@ public class RatingController {
         rating.setMetrics(metrics);
 
         Rating saved = ratingRepository.save(rating);
+        reputationService.recalculate(request.getReviewedUserId());
         return ApiResponse.success(saved, "Rating submitted successfully", HttpStatus.CREATED);
     }
 

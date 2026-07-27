@@ -24,7 +24,11 @@ export default function Navbar() {
     }
   }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (location.pathname === "/login" || location.pathname === "/register") {
+  if (
+    location.pathname === "/login" ||
+    location.pathname === "/register" ||
+    location.pathname.startsWith("/admin")
+  ) {
     return null;
   }
 

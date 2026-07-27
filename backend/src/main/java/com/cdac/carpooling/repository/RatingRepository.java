@@ -7,6 +7,7 @@ public interface RatingRepository extends MongoRepository<Rating, String> {
     List<Rating> findByReviewedUserId(String reviewedUserId);
     List<Rating> findByRideId(String rideId);
     boolean existsByRideIdAndReviewerId(String rideId, String reviewerId);
+    long countByReviewedUserId(String reviewedUserId);
 }
 
 

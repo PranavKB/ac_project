@@ -10,10 +10,13 @@ import com.cdac.carpooling.security.JwtUtil;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+
+    private static final Set<String> ALLOWED_PUBLIC_ROLES = Set.of("PASSENGER", "DRIVER");
 
     private final UserRepository userRepository;
     private final EmailService emailService;
@@ -45,12 +48,23 @@ public class AuthService {
             throw new RuntimeException("Email already registered: " + email);
         }
 
+        List<String> sanitizedRoles = roles == null ? List.of()
+                : roles.stream()
+                        .filter(role -> role != null)
+                        .map(String::toUpperCase)
+                        .filter(ALLOWED_PUBLIC_ROLES::contains)
+                        .distinct()
+                        .toList();
+        if (sanitizedRoles.isEmpty()) {
+            throw new RuntimeException("At least one valid role (PASSENGER or DRIVER) is required");
+        }
+
         User user = new User();
         user.setName(name);
         user.setEmail(email);
         user.setPhone(phone);
         user.setPassword(passwordEncoder.encode(password));
-        user.setRoles(roles);
+        user.setRoles(sanitizedRoles);
         user.setReputationProfile(new User.ReputationProfile(80.0, 80.0, 80.0, "New user — no rides yet."));
         user.setTotalCarbonSavedKg(0.0);
         user.setCreatedAt(Instant.now());

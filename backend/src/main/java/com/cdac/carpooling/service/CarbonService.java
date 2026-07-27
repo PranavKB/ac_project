@@ -20,6 +20,14 @@ public class CarbonService {
     private final UserRepository userRepository;
 
     /**
+     * Reverse-derive liters of fuel avoided from a known CO2 saving,
+     * using the same CO2_PER_LITER factor calculateOffset() applies.
+     */
+    public static double fuelLitersFromCo2Kg(double co2Kg) {
+        return co2Kg / CO2_PER_LITER;
+    }
+
+    /**
      * Calculate environmental offset for a completed ride.
      * Each shared passenger reduces one avoided car's fuel consumption.
      */

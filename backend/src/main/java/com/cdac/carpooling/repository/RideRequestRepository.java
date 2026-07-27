@@ -15,4 +15,6 @@ public interface RideRequestRepository extends MongoRepository<RideRequest, Stri
     List<RideRequest> findByRideIdAndStatus(String rideId, String status);
 
     List<RideRequest> findByStatus(String status);
+
+    long countByStatus(String status);
 }
