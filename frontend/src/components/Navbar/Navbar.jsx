@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import useAuth from "../../context/AuthContext/useAuth";
 import { Layout, Button, Avatar, Dropdown, Space, Tooltip, Badge } from "antd";
@@ -13,9 +14,15 @@ import {
 const { Header } = Layout;
 
 export default function Navbar() {
-  const { user, activeRole, switchRole, logout } = useAuth();
+  const { user, activeRole, switchRole, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    if (user?.data?.id) {
+      refreshUser();
+    }
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (location.pathname === "/login" || location.pathname === "/register") {
     return null;

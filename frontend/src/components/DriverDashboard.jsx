@@ -516,7 +516,7 @@ const updateMapRoute = async (source, destination, setMapProps) => {
 const executeDriverAction = async (actionFn, successMsg, callback) => {
   try {
     const result = await actionFn();
-    if (result.status === "SUCCESS") {
+    if (result.success) {
       Modal.success({ title: "Success", content: successMsg });
       callback();
     } else {

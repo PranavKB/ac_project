@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { rideAPI, requestAPI, messageAPI } from "../../api";
+import { calculateRouteDistance } from "../utils/helpers";
 import useAuth from "../context/AuthContext/useAuth";
 import {
   Card,
@@ -660,6 +661,8 @@ function GridDetailsLayout({
   bookingStatus,
   handleBookRide,
   bookingInProgress,
+  distanceKm,
+  co2Kg,
 }) {
   return (
     <Row gutter={[32, 32]}>
@@ -693,7 +696,19 @@ function GridDetailsLayout({
             message={
               <div style={{ color: "#054752" }}>
                 By choosing this trip, you will help avoid{" "}
-                <strong>≈86.9 kg of CO₂</strong>.
+                <strong>≈{co2Kg > 0 ? co2Kg.toFixed(1) : "—"} kg of CO₂</strong>
+                {distanceKm > 0 && (
+                  <span
+                    style={{
+                      color: "#708c91",
+                      fontSize: "0.82rem",
+                      marginLeft: "6px",
+                    }}
+                  >
+                    ({distanceKm} km route)
+                  </span>
+                )}
+                .
               </div>
             }
             type="success"
@@ -742,7 +757,16 @@ function GridDetailsLayout({
   );
 }
 
-const parseRideTimesAndLocations = (ride) => {
+// Mirrors CarbonService.java: distKm × 0.08 L/km × 2.33 kg/L × passengerCount
+const FUEL_PER_KM = 0.08;
+const CO2_PER_LITER = 2.33;
+
+function calculateCo2(distanceKm, passengerCount) {
+  const avoided = distanceKm * FUEL_PER_KM * Math.max(1, passengerCount);
+  return Math.round(avoided * CO2_PER_LITER * 100) / 100;
+}
+
+const parseRideTimesAndLocations = (ride, passengerCount = 1) => {
   if (!ride) return {};
   const srcName = ride.source?.name ? ride.source.name.split(",")[0] : "Origin";
   const srcFull = ride.source?.name || "Detailed address not specified";
@@ -792,6 +816,20 @@ const parseRideTimesAndLocations = (ride) => {
       })
     : "N/A";
 
+  // Compute distance from stored route coordinates
+  const distanceKm =
+    ride.routeCoords?.length >= 2
+      ? Math.round(calculateRouteDistance(ride.routeCoords) * 10) / 10
+      : 0;
+
+  // For COMPLETED rides use the authoritative backend-stored value;
+  // for ACTIVE/ONGOING show a frontend estimate as a preview.
+  const co2Kg =
+    ride.status === "COMPLETED" &&
+    ride.executionDetails?.environmentalOffset?.netReducedCo2Kg != null
+      ? ride.executionDetails.environmentalOffset.netReducedCo2Kg
+      : calculateCo2(distanceKm, passengerCount);
+
   return {
     srcName,
     srcFull,
@@ -802,13 +840,15 @@ const parseRideTimesAndLocations = (ride) => {
     durationText,
     priceAmount,
     formattedDate,
+    distanceKm,
+    co2Kg,
   };
 };
 
 const executeRideAction = async (actionFn, successMsg, callback) => {
   try {
     const result = await actionFn();
-    if (result.status === "SUCCESS") {
+    if (result.success) {
       Modal.success({ title: "Success", content: successMsg });
       callback();
     }
@@ -865,7 +905,7 @@ const requestRideBooking = async (
 export default function RideDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, activeRole } = useAuth();
+  const { user, activeRole, refreshUser } = useAuth();
 
   const [ride, setRide] = useState(null);
   const [passengers, setPassengers] = useState([]);
@@ -962,7 +1002,9 @@ export default function RideDetails() {
     durationText,
     priceAmount,
     formattedDate,
-  } = parseRideTimesAndLocations(ride);
+    distanceKm,
+    co2Kg,
+  } = parseRideTimesAndLocations(ride, passengers.length);
 
   const handleBookRide = () =>
     requestRideBooking(
@@ -981,9 +1023,12 @@ export default function RideDetails() {
     );
   const handleCompleteTrip = () =>
     executeRideAction(
-      () => rideAPI.complete(ride.id, 10.0),
+      () => rideAPI.complete(ride.id, distanceKm || 0),
       "Trip completed successfully!",
-      fetchRideData,
+      () => {
+        fetchRideData();
+        refreshUser();
+      },
     );
 
   return (
@@ -1032,6 +1077,8 @@ export default function RideDetails() {
         bookingStatus={bookingStatus}
         handleBookRide={handleBookRide}
         bookingInProgress={bookingInProgress}
+        distanceKm={distanceKm}
+        co2Kg={co2Kg}
       />
     </div>
   );

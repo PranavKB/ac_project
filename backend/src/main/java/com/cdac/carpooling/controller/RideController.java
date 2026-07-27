@@ -208,6 +208,9 @@ public class RideController {
 
         Ride saved = rideRepository.save(ride);
 
+        // Credit the driver's cumulative CO2 total
+        carbonService.creditCarbonToDriver(ride.getDriverId(), offset.getNetReducedCo2Kg());
+
         return ApiResponse.success(saved, "Ride completed successfully");
 
     }

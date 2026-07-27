@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AuthContext } from "./auth-context";
+import { userAPI } from "../../../api";
 
 export default function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
@@ -52,9 +53,22 @@ export default function AuthProvider({ children }) {
     localStorage.setItem("activeRole", newRole);
   };
 
+  const refreshUser = async () => {
+    if (!user?.data?.id) return;
+    try {
+      const res = await userAPI.get(user.data.id);
+      if (res && res.success) {
+        setUser(res);
+        localStorage.setItem("user", JSON.stringify(res));
+      }
+    } catch (err) {
+      console.error("Failed to refresh user profile:", err);
+    }
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, activeRole, switchRole, login, logout }}
+      value={{ user, activeRole, switchRole, login, logout, refreshUser }}
     >
       {children}
     </AuthContext.Provider>
