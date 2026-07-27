@@ -20,7 +20,6 @@ import {
 import {
   ClockCircleOutlined,
   TagOutlined,
-  FieldTimeOutlined,
   SafetyOutlined,
   AlertOutlined,
   CloseCircleOutlined,
@@ -106,8 +105,6 @@ const filterAndSortRides = (
   return [...filtered].sort((a, b) => {
     if (sortBy === "price")
       return (a.ride?.pricePerSeat || 0) - (b.ride?.pricePerSeat || 0);
-    if (sortBy === "shortest")
-      return (a.ride?.durationMinutes || 0) - (b.ride?.durationMinutes || 0);
     const timeA = new Date(a.ride?.departureTime || 0).getTime();
     const timeB = new Date(b.ride?.departureTime || 0).getTime();
     return timeA - timeB;
@@ -267,18 +264,6 @@ function FilterSidebarCard({
             >
               <Space>
                 <TagOutlined /> Lowest price
-              </Space>
-            </Radio>
-            <Radio
-              value="shortest"
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                width: "100%",
-              }}
-            >
-              <Space>
-                <FieldTimeOutlined /> Shortest ride
               </Space>
             </Radio>
           </Space>
