@@ -17,6 +17,16 @@ public class RideRequestService {
     private final RideRequestRepository rideRequestRepository;
 
     public RideRequest createRequest(RideRequestDto dto) {
+        List<RideRequest> existing = rideRequestRepository.findByPassengerId(dto.getPassengerId());
+        boolean hasDuplicate = existing.stream().anyMatch(r ->
+            dto.getRideId().equals(r.getRideId()) &&
+            ("PENDING".equals(r.getStatus()) || "APPROVED".equals(r.getStatus()) || "ACCEPTED".equals(r.getStatus()))
+        );
+
+        if (hasDuplicate) {
+            throw new RuntimeException("You already have an active booking request for this ride.");
+        }
+
         RideRequest request = new RideRequest();
 
         request.setRideId(dto.getRideId());

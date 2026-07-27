@@ -21,15 +21,36 @@ public class RideMatchingService {
 
     /**
      * Pre-trip matching: find ACTIVE rides whose H3 route overlaps >= threshold
-     * with the passenger's source to destination route.
+     * with the passenger's source to destination route AND travels in the same direction.
      */
-    public List<Map<String, Object>> findMatchingRides(List<String> passengerH3) {
-        List<Ride> activeRides = rideRepository.findByStatus("ACTIVE");
+    public List<Map<String, Object>> findMatchingRides(double pSrcLat, double pSrcLng, double pDestLat, double pDestLng, List<String> passengerH3, String departureDate) {
+        List<Ride> candidateRides;
+        List<String> allowedStatuses = List.of("ACTIVE", "ONGOING");
+
+        if (departureDate != null && !departureDate.isBlank()) {
+            try {
+                java.time.LocalDate date = java.time.LocalDate.parse(departureDate);
+                java.time.Instant startOfDay = date.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+                java.time.Instant endOfDay = date.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+                candidateRides = rideRepository.findByDepartureTimeBetweenAndStatusIn(startOfDay, endOfDay, allowedStatuses);
+            } catch (Exception e) {
+                candidateRides = rideRepository.findByStatusIn(allowedStatuses);
+            }
+        } else {
+            candidateRides = rideRepository.findByStatusIn(allowedStatuses);
+        }
+
         List<Map<String, Object>> matches = new ArrayList<>();
 
-        for (Ride ride : activeRides) {
+        for (Ride ride : candidateRides) {
             if (ride.getAvailableSeats() <= 0)
                 continue;
+
+            // Enforce direction and route proximity
+            if (!isSameDirectionAndOnRoute(ride, pSrcLat, pSrcLng, pDestLat, pDestLng)) {
+                continue;
+            }
+
             double similarity = h3Service.calculateSimilarity(ride.getH3RouteSegments(), passengerH3);
             if (similarity >= SIMILARITY_THRESHOLD) {
                 Map<String, Object> entry = new HashMap<>();
@@ -41,6 +62,54 @@ public class RideMatchingService {
 
         matches.sort((a, b) -> Double.compare((double) b.get("similarityScore"), (double) a.get("similarityScore")));
         return matches;
+    }
+
+    private boolean isSameDirectionAndOnRoute(Ride ride, double pSrcLat, double pSrcLng, double pDestLat, double pDestLng) {
+        List<List<Double>> routeCoords = ride.getRouteCoords();
+        if (routeCoords == null || routeCoords.isEmpty()) {
+            // Fallback to checking source and destination coordinates if routeCoords is empty
+            if (ride.getSource() != null && ride.getSource().getLocation() != null && ride.getSource().getLocation().getCoordinates() != null &&
+                ride.getDestination() != null && ride.getDestination().getLocation() != null && ride.getDestination().getLocation().getCoordinates() != null) {
+                double[] s = ride.getSource().getLocation().getCoordinates();
+                double[] d = ride.getDestination().getLocation().getCoordinates();
+                double dSrc = h3Service.haversineKm(pSrcLat, pSrcLng, s[1], s[0]);
+                double dDest = h3Service.haversineKm(pDestLat, pDestLng, d[1], d[0]);
+                return dSrc <= 50.0 && dDest <= 50.0;
+            }
+            return true;
+        }
+
+        int pickupIdx = -1;
+        double minPickupDist = Double.MAX_VALUE;
+
+        int dropoffIdx = -1;
+        double minDropoffDist = Double.MAX_VALUE;
+
+        for (int i = 0; i < routeCoords.size(); i++) {
+            List<Double> coord = routeCoords.get(i);
+            double rLat = coord.get(0);
+            double rLng = coord.get(1);
+
+            double dSrc = h3Service.haversineKm(pSrcLat, pSrcLng, rLat, rLng);
+            if (dSrc < minPickupDist) {
+                minPickupDist = dSrc;
+                pickupIdx = i;
+            }
+
+            double dDest = h3Service.haversineKm(pDestLat, pDestLng, rLat, rLng);
+            if (dDest < minDropoffDist) {
+                minDropoffDist = dDest;
+                dropoffIdx = i;
+            }
+        }
+
+        // Must be within 50 km proximity of the route path
+        if (minPickupDist > 50.0 || minDropoffDist > 50.0) {
+            return false;
+        }
+
+        // Direction check: Driver MUST reach passenger pickup location BEFORE dropoff location
+        return pickupIdx < dropoffIdx;
     }
 
     @Async

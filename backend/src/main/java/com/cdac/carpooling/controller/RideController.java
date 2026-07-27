@@ -61,24 +61,29 @@ public class RideController {
         ride.setDestination(parseLocationDto(request.getDestination()));
         List<Double> srccoords = request.getSource().getLocation().getCoordinates();
         List<Double> dstcoords = request.getDestination().getLocation().getCoordinates();
-        String startH3 = h3Service.pathToH3Segments(List.of(List.of(srccoords.get(1), srccoords.get(0)))).get(0);
-        String endH3 = h3Service.pathToH3Segments(List.of(List.of(dstcoords.get(1), dstcoords.get(0)))).get(0);
-        ride.setH3RouteSegments(List.of(startH3, endH3));
-        ride.setRouteCoords(
-                List.of(List.of(srccoords.get(1), srccoords.get(0)), List.of(dstcoords.get(1), dstcoords.get(0))));
-        // Initialize currentLocation as starting coordinate
+
+        double srcLng = srccoords.get(0);
+        double srcLat = srccoords.get(1);
+        double destLng = dstcoords.get(0);
+        double destLat = dstcoords.get(1);
+
+        // Fetch full driving polyline & H3 segments immediately upon ride creation
+        List<List<Double>> routeCoords = routingService.getRouteCoordinates(srcLat, srcLng, destLat, destLng);
+        List<String> fullH3 = h3Service.pathToH3Segments(routeCoords);
+
+        ride.setH3RouteSegments(fullH3);
+        ride.setRouteCoords(routeCoords);
         ride.setCurrentLocation(srccoords);
+
         // Build execution details
         Ride.ExecutionDetails details = new Ride.ExecutionDetails();
         details.setActualDistanceKm(0);
         ride.setExecutionDetails(details);
+
         Ride saved = rideRepository.save(ride);
         if (saved == null) {
             return ApiResponse.error("Failed to create ride. Please try again.");
         }
-        // Asynchronously populate the full polyline H3 segments in background
-        rideMatchingService.populateRouteH3SegmentsAsync(saved.getId(), srccoords.get(0), srccoords.get(1),
-                dstcoords.get(0), dstcoords.get(1));
         return ApiResponse.success(saved, "Ride created Successfully");
     }
 
@@ -112,12 +117,15 @@ public class RideController {
         }
 
         try {
-            // Fetch full driving polyline coordinates for the passenger's route
-            List<List<Double>> routeCoords = routingService.getRouteCoordinates(
-                    src.get(0), src.get(1),
-                    dst.get(0), dst.get(1));
+            double pSrcLat = src.get(0);
+            double pSrcLng = src.get(1);
+            double pDestLat = dst.get(0);
+            double pDestLng = dst.get(1);
+
+            String departureDate = request.getDepartureDate();
+            List<List<Double>> routeCoords = routingService.getRouteCoordinates(pSrcLat, pSrcLng, pDestLat, pDestLng);
             List<String> passengerH3 = h3Service.pathToH3Segments(routeCoords);
-            List<Map<String, Object>> matches = rideMatchingService.findMatchingRides(passengerH3);
+            List<Map<String, Object>> matches = rideMatchingService.findMatchingRides(pSrcLat, pSrcLng, pDestLat, pDestLng, passengerH3, departureDate);
             return ApiResponse.success(matches, "Matching rides fetched successfully");
         } catch (Exception e) {
             return ApiResponse.error("Something went wrong on the server: " + e.getMessage());

@@ -558,21 +558,63 @@ function SidebarDetailCard({
                 Book Ride
               </Button>
             )}
-            {isBooked && (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "12px",
-                  borderRadius: "12px",
-                  border: "1px solid #faad14",
-                  backgroundColor: "#fffbe6",
-                }}
-              >
-                <Text strong style={{ color: "#d48806" }}>
-                  Booking Status: {bookingStatus}
-                </Text>
-              </div>
-            )}
+            {isBooked &&
+              (() => {
+                const displayBookingStatus =
+                  bookingStatus === "APPROVED"
+                    ? rideStatus === "COMPLETED"
+                      ? "COMPLETED"
+                      : rideStatus === "ONGOING"
+                        ? "ONGOING"
+                        : "APPROVED"
+                    : bookingStatus;
+
+                const statusStyles = {
+                  COMPLETED: {
+                    border: "1px solid #b7eb8f",
+                    bg: "#f6ffed",
+                    color: "#52c41a",
+                  },
+                  ONGOING: {
+                    border: "1px solid #91caff",
+                    bg: "#e6f7ff",
+                    color: "#00aff5",
+                  },
+                  APPROVED: {
+                    border: "1px solid #b7eb8f",
+                    bg: "#f6ffed",
+                    color: "#389e0d",
+                  },
+                  REJECTED: {
+                    border: "1px solid #ffccc7",
+                    bg: "#fff2f0",
+                    color: "#ff4d4f",
+                  },
+                  PENDING: {
+                    border: "1px solid #ffe58f",
+                    bg: "#fffbe6",
+                    color: "#d48806",
+                  },
+                };
+                const style =
+                  statusStyles[displayBookingStatus] || statusStyles.PENDING;
+
+                return (
+                  <div
+                    style={{
+                      textAlign: "center",
+                      padding: "12px",
+                      borderRadius: "12px",
+                      border: style.border,
+                      backgroundColor: style.bg,
+                    }}
+                  >
+                    <Text strong style={{ color: style.color }}>
+                      Booking Status: {displayBookingStatus}
+                    </Text>
+                  </div>
+                );
+              })()}
           </>
         )}
       </Space>

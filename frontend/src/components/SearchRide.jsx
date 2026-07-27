@@ -13,9 +13,132 @@ import {
   CompassOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { calculateRouteDistance } from "../utils/helpers";
+
+const formatRideTimesAndDuration = (ride) => {
+  const depDate = ride?.departureTime ? new Date(ride.departureTime) : null;
+  const validDepDate = depDate && !isNaN(depDate.getTime()) ? depDate : null;
+
+  const depTime = validDepDate
+    ? validDepDate.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "08:00 AM";
+
+  const distKm =
+    ride?.routeCoords?.length >= 2
+      ? Math.round(calculateRouteDistance(ride.routeCoords) * 10) / 10
+      : 0;
+
+  const durationMins =
+    ride?.estimatedDurationMinutes && ride.estimatedDurationMinutes > 0
+      ? ride.estimatedDurationMinutes
+      : distKm > 0
+        ? Math.max(15, Math.round((distKm / 40) * 60))
+        : 45;
+
+  const h = Math.floor(durationMins / 60);
+  const m = durationMins % 60;
+  const durationText = h > 0 ? `${h}h${m > 0 ? ` ${m}m` : ""}` : `${m}m`;
+
+  const arrivalDate = validDepDate
+    ? new Date(validDepDate.getTime() + durationMins * 60 * 1000)
+    : null;
+
+  const arrTime = arrivalDate
+    ? arrivalDate.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "08:45 AM";
+
+  const priceAmount =
+    ride?.pricePerSeat != null && ride.pricePerSeat > 0
+      ? `₹${Number(ride.pricePerSeat).toLocaleString("en-IN")}.00`
+      : "₹250.00";
+
+  return { depTime, arrTime, durationText, priceAmount };
+};
+
+function RenderBookingAction({
+  myBookingStatus,
+  onBook,
+  match,
+  bookingInProgress,
+  seatsLeft,
+}) {
+  if (myBookingStatus === "PENDING") {
+    return (
+      <Badge
+        count="Request Pending"
+        style={{
+          backgroundColor: "#fffbe6",
+          border: "1px solid #ffe58f",
+          color: "#d48806",
+          padding: "0 10px",
+          fontWeight: 700,
+          boxShadow: "none",
+        }}
+      />
+    );
+  }
+  if (myBookingStatus === "APPROVED" || myBookingStatus === "ACCEPTED") {
+    return (
+      <Badge
+        count="Request Approved"
+        style={{
+          backgroundColor: "#f6ffed",
+          border: "1px solid #b7eb8f",
+          color: "#52c41a",
+          padding: "0 10px",
+          fontWeight: 700,
+          boxShadow: "none",
+        }}
+      />
+    );
+  }
+  if (myBookingStatus === "REJECTED") {
+    return (
+      <Badge
+        count="Request Rejected"
+        style={{
+          backgroundColor: "#fff2f0",
+          border: "1px solid #ffccc7",
+          color: "#ff4d4f",
+          padding: "0 10px",
+          fontWeight: 700,
+          boxShadow: "none",
+        }}
+      />
+    );
+  }
+  if (!onBook) return null;
+
+  return (
+    <Button
+      type="primary"
+      shape="round"
+      size="small"
+      disabled={bookingInProgress || seatsLeft <= 0}
+      onClick={(e) => {
+        e.stopPropagation();
+        onBook(match);
+      }}
+      style={{ fontWeight: 600 }}
+    >
+      {bookingInProgress ? "Booking..." : "Book"}
+    </Button>
+  );
+}
 
 // --- RideMatchCard Component
-export function RideMatchCard({ match, onBook, bookingInProgress }) {
+export function RideMatchCard({
+  match,
+  onBook,
+  bookingInProgress,
+  myBookingStatus,
+}) {
   const navigate = useNavigate();
   const { ride } = match;
   const driverName = ride?.driverName || "Driver";
@@ -23,9 +146,8 @@ export function RideMatchCard({ match, onBook, bookingInProgress }) {
   const seatsLeft = ride?.availableSeats ?? 2;
   const similarityScore = Math.round((match?.similarityScore || 0.85) * 100);
 
-  const depTime = ride?.departureTime || "08:00";
-  const arrTime = ride?.arrivalTime || "16:20";
-  const durationText = ride?.estimatedDuration || "8h20";
+  const { depTime, arrTime, durationText, priceAmount } =
+    formatRideTimesAndDuration(ride);
 
   const srcName = ride?.source?.name
     ? ride.source.name.split(",")[0]
@@ -33,10 +155,6 @@ export function RideMatchCard({ match, onBook, bookingInProgress }) {
   const destName = ride?.destination?.name
     ? ride.destination.name.split(",")[0]
     : "Destination";
-
-  const priceAmount = ride?.pricePerSeat
-    ? `₹${ride.pricePerSeat.toLocaleString("en-IN")}.00`
-    : "₹1,250.00";
 
   return (
     <Card
@@ -227,21 +345,13 @@ export function RideMatchCard({ match, onBook, bookingInProgress }) {
             }}
           />
 
-          {onBook && (
-            <Button
-              type="primary"
-              shape="round"
-              size="small"
-              disabled={bookingInProgress || seatsLeft <= 0}
-              onClick={(e) => {
-                e.stopPropagation();
-                onBook(match);
-              }}
-              style={{ fontWeight: 600 }}
-            >
-              {bookingInProgress ? "Booking..." : "Book"}
-            </Button>
-          )}
+          <RenderBookingAction
+            myBookingStatus={myBookingStatus}
+            onBook={onBook}
+            match={match}
+            bookingInProgress={bookingInProgress}
+            seatsLeft={seatsLeft}
+          />
         </Space>
       </div>
     </Card>
@@ -256,12 +366,42 @@ export function SearchForm({
   loading,
   horizontal = true,
 }) {
-  const [searchDetails, setSearchDetails] = useState({
-    source: null,
-    destination: null,
+  const [searchDetails, setSearchDetails] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem("carpool_last_search");
+      if (saved)
+        return (
+          JSON.parse(saved).searchDetails || { source: null, destination: null }
+        );
+    } catch (e) {
+      console.error(e);
+    }
+    return { source: null, destination: null };
   });
-  const [date, setDate] = useState(dayjs("2026-07-25"));
-  const [passengers, setPassengers] = useState("1");
+  const [date, setDate] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem("carpool_last_search");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.date) return dayjs(parsed.date);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return dayjs("2026-07-25");
+  });
+  const [passengers, setPassengers] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem("carpool_last_search");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.passengers) return parsed.passengers;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return "1";
+  });
   const [localLoading, setLocalLoading] = useState(false);
 
   const isLoading = loading !== undefined ? loading : localLoading;
@@ -291,6 +431,7 @@ export function SearchForm({
           parseFloat(destination.lat),
           parseFloat(destination.lng),
         ],
+        departureDate: date ? date.format("YYYY-MM-DD") : null,
       };
 
       const response = await rideAPI.search(requestPayload);
@@ -467,10 +608,18 @@ export function SearchForm({
 
 // --- Main Standalone SearchRide Page Component
 export default function SearchRide() {
-  const [searchResults, setSearchResults] = useState([]);
+  const [searchResults, setSearchResults] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem("carpool_last_search");
+      if (saved) return JSON.parse(saved).searchResults || [];
+    } catch (e) {
+      console.error(e);
+    }
+    return [];
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [searched, setSearched] = useState(false);
+  const [searched, setSearched] = useState(() => searchResults.length > 0);
 
   const handleSearchStart = () => {
     setLoading(true);
