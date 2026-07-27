@@ -534,7 +534,7 @@ const executeDriverAction = async (actionFn, successMsg, callback) => {
 // --- Main component ---
 
 export default function DriverDashboard() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -621,7 +621,10 @@ export default function DriverDashboard() {
     return executeDriverAction(
       () => rideAPI.complete(selectedRide.id, totalDist),
       "Trip completed successfully. Carbon savings calculated.",
-      fetchDriverRides,
+      () => {
+        fetchDriverRides();
+        refreshUser();
+      },
     );
   };
 

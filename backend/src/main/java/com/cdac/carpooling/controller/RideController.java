@@ -211,6 +211,14 @@ public class RideController {
         // Credit the driver's cumulative CO2 total
         carbonService.creditCarbonToDriver(ride.getDriverId(), offset.getNetReducedCo2Kg());
 
+        // Credit each passenger's cumulative CO2 total
+        if (ride.getPassengerIds() != null) {
+            double passengerCo2 = carbonService.calculatePassengerOffset(distanceKm);
+            for (String passengerId : ride.getPassengerIds()) {
+                carbonService.creditCarbonToUser(passengerId, passengerCo2);
+            }
+        }
+
         return ApiResponse.success(saved, "Ride completed successfully");
 
     }

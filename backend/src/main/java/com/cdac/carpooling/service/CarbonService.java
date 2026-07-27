@@ -3,6 +3,7 @@ package com.cdac.carpooling.service;
 import org.springframework.stereotype.Service;
 
 import com.cdac.carpooling.model.Ride;
+import com.cdac.carpooling.model.User;
 import com.cdac.carpooling.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -30,12 +31,30 @@ public class CarbonService {
     }
 
     /**
-     * Add CO2 saved to driver's running total.
+     * Calculate individual carbon offset for a single passenger.
      */
-    public void creditCarbonToDriver(String driverId, double co2Kg) {
-        userRepository.findById(driverId).ifPresent(user -> {
-            user.setTotalCarbonSavedKg(user.getTotalCarbonSavedKg() + co2Kg);
-            userRepository.save(user);
+    public double calculatePassengerOffset(double distanceKm) {
+        double avoidedFuel = distanceKm * FUEL_PER_KM;
+        double reducedCo2 = avoidedFuel * CO2_PER_LITER;
+        return Math.round(reducedCo2 * 100.0) / 100.0;
+    }
+
+    /**
+     * Add CO2 saved to a user's running total.
+     */
+    public void creditCarbonToUser(String userId, double co2Kg) {
+        System.out.println("[CarbonService] Crediting carbon: userId=" + userId + ", co2Kg=" + co2Kg);
+        userRepository.findById(userId).ifPresentOrElse(user -> {
+            double oldVal = user.getTotalCarbonSavedKg();
+            user.setTotalCarbonSavedKg(oldVal + co2Kg);
+            User saved = userRepository.save(user);
+            System.out.println("[CarbonService] Successfully updated user carbon from " + oldVal + " to " + saved.getTotalCarbonSavedKg());
+        }, () -> {
+            System.err.println("[CarbonService] ERROR: User not found with ID: " + userId);
         });
+    }
+
+    public void creditCarbonToDriver(String driverId, double co2Kg) {
+        creditCarbonToUser(driverId, co2Kg);
     }
 }
