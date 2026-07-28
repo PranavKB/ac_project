@@ -28,8 +28,9 @@ public class RatingController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<Rating>> submitRating(@Valid @RequestBody RatingRequest request) {
-        if (ratingRepository.existsByRideIdAndReviewerId(request.getRideId(), request.getReviewerId())) {
-            return ApiResponse.error("You have already rated this trip", HttpStatus.BAD_REQUEST);
+        if (ratingRepository.existsByRideIdAndReviewerIdAndReviewedUserId(request.getRideId(),
+                request.getReviewerId(), request.getReviewedUserId())) {
+            return ApiResponse.error("You have already rated this user for this trip", HttpStatus.BAD_REQUEST);
         }
 
         Ride ride = rideRepository.findById(request.getRideId()).orElse(null);

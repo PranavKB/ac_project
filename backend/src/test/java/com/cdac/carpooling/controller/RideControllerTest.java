@@ -8,7 +8,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.cdac.carpooling.model.LocationPoint;
 import com.cdac.carpooling.model.Ride;
+import com.cdac.carpooling.model.User;
 import com.cdac.carpooling.repository.RideRepository;
+import com.cdac.carpooling.repository.UserRepository;
 import com.cdac.carpooling.service.H3Service;
 import com.cdac.carpooling.service.RoutingService;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +38,9 @@ class RideControllerTest {
     private RideRepository rideRepository;
 
     @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
     private H3Service h3Service;
 
     @Autowired
@@ -44,6 +49,7 @@ class RideControllerTest {
     @BeforeEach
     void setUp() {
         rideRepository.deleteAll();
+        userRepository.deleteAll();
     }
 
     @Test
@@ -194,5 +200,44 @@ class RideControllerTest {
         assertEquals(2, completedRide.getH3RouteSegments().size());
         assertEquals("h3_1", completedRide.getH3RouteSegments().get(0));
         assertEquals("h3_4", completedRide.getH3RouteSegments().get(1));
+    }
+
+    @Test
+    @WithMockUser(username = "driver1", roles = {"DRIVER"})
+    void testCompleteRide_creditsCarbonToAllPassengers() throws Exception {
+        User passenger1 = new User();
+        passenger1.setName("Passenger One");
+        passenger1.setEmail("p1@example.com");
+        passenger1.setTotalCarbonSavedKg(0.0);
+        passenger1 = userRepository.save(passenger1);
+
+        User passenger2 = new User();
+        passenger2.setName("Passenger Two");
+        passenger2.setEmail("p2@example.com");
+        passenger2.setTotalCarbonSavedKg(0.0);
+        passenger2 = userRepository.save(passenger2);
+
+        Ride ride = new Ride();
+        ride.setDriverId("driver-777");
+        ride.setStatus("ONGOING");
+        ride.setPassengerIds(List.of(passenger1.getId(), passenger2.getId()));
+        ride.setH3RouteSegments(List.of("h3_1", "h3_2"));
+        Ride.ExecutionDetails details = new Ride.ExecutionDetails();
+        details.setStartTime(Instant.now());
+        ride.setExecutionDetails(details);
+
+        Ride savedRide = rideRepository.save(ride);
+
+        mockMvc.perform(post("/api/rides/" + savedRide.getId() + "/complete")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"actualDistanceKm\": 10.0}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        User updatedP1 = userRepository.findById(passenger1.getId()).orElseThrow();
+        User updatedP2 = userRepository.findById(passenger2.getId()).orElseThrow();
+
+        assertEquals(1.86, updatedP1.getTotalCarbonSavedKg());
+        assertEquals(1.86, updatedP2.getTotalCarbonSavedKg());
     }
 }

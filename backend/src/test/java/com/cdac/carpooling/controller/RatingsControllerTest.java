@@ -104,4 +104,49 @@ class RatingsControllerTest {
                 .andExpect(jsonPath("$.data[0].textReview")
                         .value("Very punctual"));
     }
+
+    @Test
+    @WithMockUser(username = "driver1", roles = { "DRIVER" })
+    void submitRating_sameReviewerCanRateMultiplePassengersOnSameRide() throws Exception {
+        Ride ride = new Ride();
+        ride.setId("ride-300");
+        ride.setDriverId("driver-3");
+        ride.setStatus("COMPLETED");
+        rideRepository.save(ride);
+
+        String ratePassenger1 = """
+                {
+                  "rideId":"ride-300",
+                  "reviewerId":"driver-3",
+                  "reviewedUserId":"passenger-1",
+                  "textReview":"Friendly"
+                }
+                """;
+        mockMvc.perform(post("/api/ratings")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(ratePassenger1))
+                .andExpect(status().isCreated());
+
+        String ratePassenger2 = """
+                {
+                  "rideId":"ride-300",
+                  "reviewerId":"driver-3",
+                  "reviewedUserId":"passenger-2",
+                  "textReview":"On time"
+                }
+                """;
+        mockMvc.perform(post("/api/ratings")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(ratePassenger2))
+                .andExpect(status().isCreated());
+
+        assertEquals(2, ratingRepository.findByRideId("ride-300").size());
+
+        // Rating the same passenger again for the same ride must still be blocked
+        mockMvc.perform(post("/api/ratings")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(ratePassenger1))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("You have already rated this user for this trip"));
+    }
 }

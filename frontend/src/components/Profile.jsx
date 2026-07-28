@@ -26,6 +26,7 @@ export default function Profile() {
   const [vehicle, setVehicle] = useState(null);
   const [reputation, setReputation] = useState(null);
   const [userTrips, setUserTrips] = useState([]);
+  const [carbonSaved, setCarbonSaved] = useState(0);
 
   // Form states for modals
   const [aboutForm] = Form.useForm();
@@ -53,6 +54,7 @@ export default function Profile() {
       setPreferences(data.preferences || {});
       setVehicle(data.vehicleDetails || {});
       setReputation(data.reputationProfile || {});
+      setCarbonSaved(data.totalCarbonSavedKg || 0);
 
       aboutForm.setFieldsValue({
         name: data.name,
@@ -121,7 +123,6 @@ export default function Profile() {
   if (loading || !user) return <LoadingView />;
   if (error) return <ErrorView error={error} onGoBack={() => navigate(-1)} />;
 
-  const carbonSaved = user.data.totalCarbonSavedKg || 0;
   const avatarInitial = user.data.name
     ? user.data.name.charAt(0).toUpperCase()
     : "U";
