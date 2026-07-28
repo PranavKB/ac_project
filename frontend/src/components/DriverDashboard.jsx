@@ -145,7 +145,9 @@ export default function DriverDashboard() {
     await updateMapRoute(ride.source, ride.destination, setPostedTripMapProps);
   };
 
-  const pendingRequests = rideRequests.filter((r) => r.status === "PENDING");
+  const pendingRequests = rideRequests
+    .filter((r) => r.status === "PENDING")
+    .sort((a, b) => (b.priorityScore || 0) - (a.priorityScore || 0));
   const acceptedPassengers = rideRequests.filter(
     (r) => r.status === "APPROVED",
   );

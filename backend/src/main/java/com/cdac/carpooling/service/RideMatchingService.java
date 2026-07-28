@@ -5,8 +5,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import com.cdac.carpooling.model.Notification;
 import com.cdac.carpooling.model.Ride;
+import com.cdac.carpooling.model.RideRequest;
+import com.cdac.carpooling.model.User;
 import com.cdac.carpooling.repository.RideRepository;
+import com.cdac.carpooling.repository.RideRequestRepository;
+import com.cdac.carpooling.repository.UserRepository;
 
 import java.util.*;
 
@@ -17,13 +22,19 @@ public class RideMatchingService {
     private final H3Service h3Service;
     private final RideRepository rideRepository;
     private final RoutingService routingService;
+    private final RideRequestRepository rideRequestRepository;
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
     private static final double SIMILARITY_THRESHOLD = 0.70;
+    private static final double DEFAULT_REPUTATION = 80.0;
 
     /**
      * Pre-trip matching: find ACTIVE rides whose H3 route overlaps >= threshold
-     * with the passenger's source to destination route AND travels in the same direction.
+     * with the passenger's source to destination route AND travels in the same
+     * direction.
      */
-    public List<Map<String, Object>> findMatchingRides(double pSrcLat, double pSrcLng, double pDestLat, double pDestLng, List<String> passengerH3, String departureDate) {
+    public List<Map<String, Object>> findMatchingRides(double pSrcLat, double pSrcLng, double pDestLat, double pDestLng,
+            List<String> passengerH3, String departureDate) {
         List<Ride> candidateRides;
         List<String> allowedStatuses = List.of("ACTIVE", "ONGOING");
 
@@ -31,8 +42,10 @@ public class RideMatchingService {
             try {
                 java.time.LocalDate date = java.time.LocalDate.parse(departureDate);
                 java.time.Instant startOfDay = date.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
-                java.time.Instant endOfDay = date.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
-                candidateRides = rideRepository.findByDepartureTimeBetweenAndStatusIn(startOfDay, endOfDay, allowedStatuses);
+                java.time.Instant endOfDay = date.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault())
+                        .toInstant();
+                candidateRides = rideRepository.findByDepartureTimeBetweenAndStatusIn(startOfDay, endOfDay,
+                        allowedStatuses);
             } catch (Exception e) {
                 candidateRides = rideRepository.findByStatusIn(allowedStatuses);
             }
@@ -64,12 +77,16 @@ public class RideMatchingService {
         return matches;
     }
 
-    private boolean isSameDirectionAndOnRoute(Ride ride, double pSrcLat, double pSrcLng, double pDestLat, double pDestLng) {
+    private boolean isSameDirectionAndOnRoute(Ride ride, double pSrcLat, double pSrcLng, double pDestLat,
+            double pDestLng) {
         List<List<Double>> routeCoords = ride.getRouteCoords();
         if (routeCoords == null || routeCoords.isEmpty()) {
-            // Fallback to checking source and destination coordinates if routeCoords is empty
-            if (ride.getSource() != null && ride.getSource().getLocation() != null && ride.getSource().getLocation().getCoordinates() != null &&
-                ride.getDestination() != null && ride.getDestination().getLocation() != null && ride.getDestination().getLocation().getCoordinates() != null) {
+            // Fallback to checking source and destination coordinates if routeCoords is
+            // empty
+            if (ride.getSource() != null && ride.getSource().getLocation() != null
+                    && ride.getSource().getLocation().getCoordinates() != null &&
+                    ride.getDestination() != null && ride.getDestination().getLocation() != null
+                    && ride.getDestination().getLocation().getCoordinates() != null) {
                 double[] s = ride.getSource().getLocation().getCoordinates();
                 double[] d = ride.getDestination().getLocation().getCoordinates();
                 double dSrc = h3Service.haversineKm(pSrcLat, pSrcLng, s[1], s[0]);
@@ -108,8 +125,73 @@ public class RideMatchingService {
             return false;
         }
 
-        // Direction check: Driver MUST reach passenger pickup location BEFORE dropoff location
+        // Direction check: Driver MUST reach passenger pickup location BEFORE dropoff
+        // location
         return pickupIdx < dropoffIdx;
+    }
+
+    /**
+     * Dynamic ad-hoc rematching: triggered when a confirmed
+     * passenger cancels mid-route. Ranks the other PENDING requests on this ride by
+     * Priority Score = RouteSimilarity(0-100) + ReputationAvg - PickupDistanceKm,
+     * persists
+     * the score, and notifies the driver of the top candidate. Pre-trip (ACTIVE
+     * ride)
+     * cancellations are plain seat release and do not trigger this.
+     */
+    public void rankAndSuggestBackupCandidates(Ride ride, String vacatedPassengerId) {
+        if (ride == null || !"ONGOING".equals(ride.getStatus())) {
+            return;
+        }
+
+        List<RideRequest> candidates = rideRequestRepository.findByRideIdAndStatus(ride.getId(), "PENDING");
+        if (candidates.isEmpty()) {
+            return;
+        }
+
+        double[] currentLocation = ride.getCurrentLocation() != null && ride.getCurrentLocation().size() == 2
+                ? new double[] { ride.getCurrentLocation().get(0), ride.getCurrentLocation().get(1) }
+                : null;
+
+        RideRequest topCandidate = null;
+        double topScore = Double.NEGATIVE_INFINITY;
+
+        for (RideRequest candidate : candidates) {
+            double similarity = h3Service.calculateSimilarity(ride.getH3RouteSegments(),
+                    candidate.getPassengerH3Segments());
+
+            double reputationAvg = userRepository.findById(candidate.getPassengerId())
+                    .map(User::getReputationProfile)
+                    .map(profile -> (profile.getTrustScore() + profile.getReliabilityScore()
+                            + profile.getComfortScore()) / 3.0)
+                    .orElse(DEFAULT_REPUTATION);
+
+            double pickupDistanceKm = 0.0;
+            if (currentLocation != null && candidate.getSource() != null
+                    && candidate.getSource().getLocation() != null
+                    && candidate.getSource().getLocation().getCoordinates() != null) {
+                double[] pickup = candidate.getSource().getLocation().getCoordinates();
+                pickupDistanceKm = h3Service.haversineKm(currentLocation[1], currentLocation[0], pickup[1],
+                        pickup[0]);
+            }
+
+            double priorityScore = similarity * 100 + reputationAvg - pickupDistanceKm;
+            candidate.setPriorityScore(priorityScore);
+            rideRequestRepository.save(candidate);
+
+            if (priorityScore > topScore) {
+                topScore = priorityScore;
+                topCandidate = candidate;
+            }
+        }
+
+        if (topCandidate != null && topScore > 0) {
+            String candidateName = topCandidate.getPassengerName() != null ? topCandidate.getPassengerName()
+                    : "A waiting passenger";
+            notificationService.create(ride.getDriverId(), Notification.Type.BACKUP_CANDIDATE_SUGGESTED,
+                    "Backup rider suggested",
+                    candidateName + " is a strong backup match for your open seat.", ride.getId());
+        }
     }
 
     @Async

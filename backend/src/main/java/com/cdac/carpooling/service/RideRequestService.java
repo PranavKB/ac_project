@@ -20,6 +20,7 @@ public class RideRequestService {
     private final RideRequestRepository rideRequestRepository;
     private final RideRepository rideRepository;
     private final NotificationService notificationService;
+    private final RideMatchingService rideMatchingService;
 
     public RideRequest createRequest(RideRequestDto dto) {
         List<RideRequest> existing = rideRequestRepository.findByPassengerId(dto.getPassengerId());
@@ -78,7 +79,10 @@ public class RideRequestService {
                 approveSeat(request);
             } else if ("APPROVED".equals(oldStatus)
                     && ("REJECTED".equals(status) || "CANCELLED".equals(status))) {
-                releaseSeat(request);
+                Ride ride = releaseSeat(request);
+                if (ride != null) {
+                    rideMatchingService.rankAndSuggestBackupCandidates(ride, request.getPassengerId());
+                }
             }
 
             if ("APPROVED".equals(status)) {
@@ -111,15 +115,15 @@ public class RideRequestService {
         rideRepository.save(ride);
     }
 
-    private void releaseSeat(RideRequest request) {
+    private Ride releaseSeat(RideRequest request) {
         Ride ride = rideRepository.findById(request.getRideId()).orElse(null);
         if (ride == null) {
-            return;
+            return null;
         }
 
         ride.setAvailableSeats(Math.min(ride.getTotalSeats(), ride.getAvailableSeats() + 1));
         ride.getPassengerIds().remove(request.getPassengerId());
-        rideRepository.save(ride);
+        return rideRepository.save(ride);
     }
 
     public List<RideRequest> getMyRequests(String passengerId) {
