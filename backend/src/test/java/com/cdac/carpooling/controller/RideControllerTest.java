@@ -1,18 +1,24 @@
 package com.cdac.carpooling.controller;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.cdac.carpooling.model.LocationPoint;
 import com.cdac.carpooling.model.Ride;
 import com.cdac.carpooling.model.User;
 import com.cdac.carpooling.repository.RideRepository;
+import com.cdac.carpooling.repository.RideRequestRepository;
 import com.cdac.carpooling.repository.UserRepository;
 import com.cdac.carpooling.service.H3Service;
 import com.cdac.carpooling.service.RoutingService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.test.web.servlet.MvcResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +47,9 @@ class RideControllerTest {
     private UserRepository userRepository;
 
     @Autowired
+    private RideRequestRepository rideRequestRepository;
+
+    @Autowired
     private H3Service h3Service;
 
     @Autowired
@@ -50,6 +59,7 @@ class RideControllerTest {
     void setUp() {
         rideRepository.deleteAll();
         userRepository.deleteAll();
+        rideRequestRepository.deleteAll();
     }
 
     @Test
@@ -227,6 +237,86 @@ class RideControllerTest {
         ride.setExecutionDetails(details);
 
         Ride savedRide = rideRepository.save(ride);
+
+        mockMvc.perform(post("/api/rides/" + savedRide.getId() + "/complete")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"actualDistanceKm\": 10.0}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        User updatedP1 = userRepository.findById(passenger1.getId()).orElseThrow();
+        User updatedP2 = userRepository.findById(passenger2.getId()).orElseThrow();
+
+        assertEquals(1.86, updatedP1.getTotalCarbonSavedKg());
+        assertEquals(1.86, updatedP2.getTotalCarbonSavedKg());
+    }
+
+    @Test
+    @WithMockUser(username = "driver1", roles = { "DRIVER" })
+    void testFullFlow_requestThenApproveThenComplete_creditsAllPassengers() throws Exception {
+        User passenger1 = new User();
+        passenger1.setName("Passenger One");
+        passenger1.setEmail("full-p1@example.com");
+        passenger1.setTotalCarbonSavedKg(0.0);
+        passenger1 = userRepository.save(passenger1);
+
+        User passenger2 = new User();
+        passenger2.setName("Passenger Two");
+        passenger2.setEmail("full-p2@example.com");
+        passenger2.setTotalCarbonSavedKg(0.0);
+        passenger2 = userRepository.save(passenger2);
+
+        Ride ride = new Ride();
+        ride.setDriverId("driver-777");
+        ride.setStatus("ACTIVE");
+        ride.setTotalSeats(2);
+        ride.setAvailableSeats(2);
+        ride.setH3RouteSegments(List.of("h3_1", "h3_2"));
+        Ride savedRide = rideRepository.save(ride);
+
+        ObjectMapper mapper = new ObjectMapper();
+        String locationJson = """
+                {
+                  "name": "Somewhere",
+                  "location": { "type": "Point", "coordinates": [12.97, 77.59] }
+                }
+                """;
+        JsonNode location = mapper.readTree(locationJson);
+
+        for (User passenger : List.of(passenger1, passenger2)) {
+            String requestPayload = mapper.createObjectNode()
+                    .put("rideId", savedRide.getId())
+                    .put("passengerId", passenger.getId())
+                    .put("passengerName", passenger.getName())
+                    .<com.fasterxml.jackson.databind.node.ObjectNode>set("source", location)
+                    .<com.fasterxml.jackson.databind.node.ObjectNode>set("destination", location)
+                    .toString();
+
+            MvcResult result = mockMvc.perform(post("/api/requests")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestPayload))
+                    .andExpect(status().isOk())
+                    .andReturn();
+
+            String requestId = mapper.readTree(result.getResponse().getContentAsString())
+                    .path("data").path("id").asText();
+
+            mockMvc.perform(put("/api/requests/" + requestId + "/approve"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        Ride rideAfterApprovals = rideRepository.findById(savedRide.getId()).orElseThrow();
+        assertEquals(0, rideAfterApprovals.getAvailableSeats());
+        assertTrue(rideAfterApprovals.getPassengerIds().contains(passenger1.getId()));
+        assertTrue(rideAfterApprovals.getPassengerIds().contains(passenger2.getId()));
+        assertEquals(2, rideAfterApprovals.getPassengerIds().size());
+
+        Ride.ExecutionDetails details = new Ride.ExecutionDetails();
+        details.setStartTime(Instant.now());
+        rideAfterApprovals.setExecutionDetails(details);
+        rideAfterApprovals.setStatus("ONGOING");
+        rideRepository.save(rideAfterApprovals);
 
         mockMvc.perform(post("/api/rides/" + savedRide.getId() + "/complete")
                 .contentType(MediaType.APPLICATION_JSON)

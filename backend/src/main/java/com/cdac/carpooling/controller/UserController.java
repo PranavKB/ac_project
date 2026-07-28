@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.cdac.carpooling.dto.ApiResponse;
+import com.cdac.carpooling.dto.UserUpdateRequest;
 import com.cdac.carpooling.model.User;
 import com.cdac.carpooling.repository.UserRepository;
 
@@ -33,7 +34,8 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Object>> updateUser(@PathVariable String id, @RequestBody User updatedUser) {
+    public ResponseEntity<ApiResponse<Object>> updateUser(@PathVariable String id,
+            @RequestBody UserUpdateRequest updatedUser) {
         Optional<User> userOptional = userRepository.findById(id);
 
         if (userOptional.isEmpty()) {
@@ -42,7 +44,6 @@ public class UserController {
 
         User user = userOptional.get();
         if (updatedUser.getName() != null) user.setName(updatedUser.getName());
-        if (updatedUser.getEmail() != null) user.setEmail(updatedUser.getEmail());
         if (updatedUser.getPhone() != null) user.setPhone(updatedUser.getPhone());
         if (updatedUser.getBio() != null) user.setBio(updatedUser.getBio());
         if (updatedUser.getPreferences() != null) user.setPreferences(updatedUser.getPreferences());
