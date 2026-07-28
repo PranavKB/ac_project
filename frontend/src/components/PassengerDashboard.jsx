@@ -129,7 +129,8 @@ const buildLocationPoint = (loc) => ({
   name: loc.name,
   location: {
     type: "Point",
-    coordinates: [parseFloat(loc.lat), parseFloat(loc.lng)],
+    // GeoJSON order: [longitude, latitude]
+    coordinates: [parseFloat(loc.lng), parseFloat(loc.lat)],
   },
 });
 

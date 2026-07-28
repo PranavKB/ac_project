@@ -88,9 +88,10 @@ export default function PublishRide({
           name: sourceLocation.name,
           location: {
             type: "Point",
+            // GeoJSON order: [longitude, latitude]
             coordinates: [
-              parseFloat(sourceLocation.lat),
               parseFloat(sourceLocation.lng),
+              parseFloat(sourceLocation.lat),
             ],
           },
         },
@@ -98,9 +99,10 @@ export default function PublishRide({
           name: destinationLocation.name,
           location: {
             type: "Point",
+            // GeoJSON order: [longitude, latitude]
             coordinates: [
-              parseFloat(destinationLocation.lat),
               parseFloat(destinationLocation.lng),
+              parseFloat(destinationLocation.lat),
             ],
           },
         },

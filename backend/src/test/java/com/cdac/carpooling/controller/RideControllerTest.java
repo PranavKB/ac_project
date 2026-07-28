@@ -76,14 +76,14 @@ class RideControllerTest {
                         "name": "Alpha Office",
                         "location": {
                             "type": "Point",
-                            "coordinates": [12.9716, 77.5946]
+                            "coordinates": [77.5946, 12.9716]
                         }
                     },
                     "destination": {
                         "name": "Beta Tech Park",
                         "location": {
                             "type": "Point",
-                            "coordinates": [12.9279, 77.6413]
+                            "coordinates": [77.6413, 12.9279]
                         }
                     }
                 }
@@ -106,7 +106,7 @@ class RideControllerTest {
         assertEquals(4, savedRide.getAvailableSeats());
         assertEquals("ACTIVE", savedRide.getStatus());
 
-        assertEquals(List.of(12.9716, 77.5946), savedRide.getCurrentLocation());
+        assertEquals(List.of(77.5946, 12.9716), savedRide.getCurrentLocation());
         assertNotNull(savedRide.getH3RouteSegments());
     }
 
@@ -135,7 +135,8 @@ class RideControllerTest {
         srcPoint.setName("Alpha Office");
         LocationPoint.GeoJsonPoint srcGeo = new LocationPoint.GeoJsonPoint();
         srcGeo.setType("Point");
-        srcGeo.setCoordinates(new double[] { srcCoords.get(0), srcCoords.get(1) });
+        // GeoJSON order: [longitude, latitude]
+        srcGeo.setCoordinates(new double[] { srcCoords.get(1), srcCoords.get(0) });
         srcPoint.setLocation(srcGeo);
         expectedRide.setSource(srcPoint);
 
@@ -143,7 +144,8 @@ class RideControllerTest {
         dstPoint.setName("Beta Tech Park");
         LocationPoint.GeoJsonPoint dstGeo = new LocationPoint.GeoJsonPoint();
         dstGeo.setType("Point");
-        dstGeo.setCoordinates(new double[] { dstCoords.get(0), dstCoords.get(1) });
+        // GeoJSON order: [longitude, latitude]
+        dstGeo.setCoordinates(new double[] { dstCoords.get(1), dstCoords.get(0) });
         dstPoint.setLocation(dstGeo);
         expectedRide.setDestination(dstPoint);
 
@@ -278,7 +280,7 @@ class RideControllerTest {
         String locationJson = """
                 {
                   "name": "Somewhere",
-                  "location": { "type": "Point", "coordinates": [12.97, 77.59] }
+                  "location": { "type": "Point", "coordinates": [77.59, 12.97] }
                 }
                 """;
         JsonNode location = mapper.readTree(locationJson);
