@@ -7,6 +7,7 @@ import {
   CarOutlined,
   FundOutlined,
   StarOutlined,
+  FlagOutlined,
   BellOutlined,
   SettingOutlined,
   LogoutOutlined,
@@ -32,6 +33,7 @@ const MENU_ITEMS = [
     icon: <StarOutlined />,
     label: "Reputation",
   },
+  { key: "/admin/reports", icon: <FlagOutlined />, label: "Reports" },
   {
     key: "/admin/notifications",
     icon: <BellOutlined />,

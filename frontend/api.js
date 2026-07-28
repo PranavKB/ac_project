@@ -173,6 +173,13 @@ export const ratingAPI = {
   },
 };
 
+export const reportAPI = {
+  create: async (reportData) => {
+    const res = await API.post("/reports", reportData);
+    return res.data;
+  },
+};
+
 export const userAPI = {
   get: async (id) => {
     const res = await API.get(`/users/${id}`);
@@ -211,6 +218,18 @@ export const adminAPI = {
   },
   getReputationAnalytics: async () => {
     const res = await API.get("/admin/analytics/reputation");
+    return res.data;
+  },
+  getReports: async () => {
+    const res = await API.get("/admin/reports");
+    return res.data;
+  },
+  reviewReport: async (id) => {
+    const res = await API.put(`/admin/reports/${id}/review`);
+    return res.data;
+  },
+  dismissReport: async (id) => {
+    const res = await API.put(`/admin/reports/${id}/dismiss`);
     return res.data;
   },
 };

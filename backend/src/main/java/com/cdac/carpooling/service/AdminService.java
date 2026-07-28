@@ -11,15 +11,18 @@ import java.util.TreeMap;
 import org.springframework.stereotype.Service;
 
 import com.cdac.carpooling.dto.AdminOverviewStatsDto;
+import com.cdac.carpooling.dto.AdminReportDto;
 import com.cdac.carpooling.dto.AdminRideSummaryDto;
 import com.cdac.carpooling.dto.AdminUserDto;
 import com.cdac.carpooling.dto.EnvironmentalAnalyticsDto;
 import com.cdac.carpooling.dto.EnvironmentalAnalyticsDto.MonthlyBreakdown;
 import com.cdac.carpooling.dto.ReputationAnalyticsDto;
 import com.cdac.carpooling.dto.ReputationAnalyticsDto.ReputationEntry;
+import com.cdac.carpooling.model.Report;
 import com.cdac.carpooling.model.Ride;
 import com.cdac.carpooling.model.User;
 import com.cdac.carpooling.repository.RatingRepository;
+import com.cdac.carpooling.repository.ReportRepository;
 import com.cdac.carpooling.repository.RideRepository;
 import com.cdac.carpooling.repository.RideRequestRepository;
 import com.cdac.carpooling.repository.UserRepository;
@@ -40,6 +43,7 @@ public class AdminService {
     private final RideRepository rideRepository;
     private final RideRequestRepository rideRequestRepository;
     private final RatingRepository ratingRepository;
+    private final ReportRepository reportRepository;
 
     // ---------- Overview ----------
 
@@ -118,6 +122,49 @@ public class AdminService {
                 .status(ride.getStatus())
                 .createdAt(ride.getCreatedAt())
                 .build();
+    }
+
+    // ---------- Reports ----------
+
+    public List<AdminReportDto> getAllReports() {
+        return reportRepository.findAll().stream().map(this::toAdminReportDto).toList();
+    }
+
+    public void updateReportStatus(String id, String status) {
+        Report report = reportRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Report not found with id: " + id));
+        report.setStatus(status);
+        reportRepository.save(report);
+    }
+
+    private AdminReportDto toAdminReportDto(Report report) {
+        Ride ride = report.getRideId() != null ? rideRepository.findById(report.getRideId()).orElse(null) : null;
+        String rideSummary = ride != null
+                ? "%s -> %s".formatted(
+                        ride.getSource() != null ? ride.getSource().getName() : "Unknown",
+                        ride.getDestination() != null ? ride.getDestination().getName() : "Unknown")
+                : null;
+
+        return AdminReportDto.builder()
+                .id(report.getId())
+                .rideId(report.getRideId())
+                .rideSummary(rideSummary)
+                .reporterId(report.getReporterId())
+                .reporterName(userName(report.getReporterId()))
+                .reportedUserId(report.getReportedUserId())
+                .reportedUserName(userName(report.getReportedUserId()))
+                .reason(report.getReason())
+                .details(report.getDetails())
+                .status(report.getStatus())
+                .createdAt(report.getCreatedAt())
+                .build();
+    }
+
+    private String userName(String userId) {
+        if (userId == null) {
+            return null;
+        }
+        return userRepository.findById(userId).map(User::getName).orElse("Unknown user");
     }
 
     // ---------- Environmental analytics ----------

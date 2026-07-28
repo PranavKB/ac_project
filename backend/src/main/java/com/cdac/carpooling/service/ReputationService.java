@@ -28,18 +28,16 @@ public class ReputationService {
             return;
         }
 
-        double trustScore = average(ratings, r -> List.of(
-                r.getMetrics().getPunctualityFactor(),
-                r.getMetrics().getCancellationConsistency(),
-                r.getMetrics().getSafeDrivingAssessment()));
+        double trustScore = weightedAverage(ratings, m -> 0.4 * m.getPunctualityFactor()
+                + 0.3 * m.getCancellationConsistency()
+                + 0.3 * m.getSafeDrivingAssessment());
 
-        double reliabilityScore = average(ratings, r -> List.of(
-                r.getMetrics().getRideCompletionSuccess(),
-                r.getMetrics().getUniformRoutineConsistency()));
+        double reliabilityScore = weightedAverage(ratings, m -> 0.5 * m.getRideCompletionSuccess()
+                + 0.3 * m.getPunctualityFactor()
+                + 0.2 * m.getUniformRoutineConsistency());
 
-        double comfortScore = average(ratings, r -> List.of(
-                r.getMetrics().getVehicleCleanlinessMetric(),
-                r.getMetrics().getCommunicationQualityFeedback()));
+        double comfortScore = weightedAverage(ratings, m -> 0.6 * m.getVehicleCleanlinessMetric()
+                + 0.4 * m.getCommunicationQualityFeedback());
 
         String aiSummary = buildSummary((trustScore + reliabilityScore + comfortScore) / 3.0);
 
@@ -50,10 +48,10 @@ public class ReputationService {
         });
     }
 
-    private double average(List<Rating> ratings, java.util.function.Function<Rating, List<Integer>> metricSelector) {
+    private double weightedAverage(List<Rating> ratings,
+            java.util.function.ToDoubleFunction<Rating.RatingMetrics> scorer) {
         return ratings.stream()
-                .flatMap(r -> metricSelector.apply(r).stream())
-                .mapToInt(Integer::intValue)
+                .mapToDouble(r -> scorer.applyAsDouble(r.getMetrics()))
                 .average()
                 .orElse(0.0) * METRIC_TO_SCORE_SCALE;
     }

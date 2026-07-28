@@ -3,8 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { rideAPI, requestAPI, messageAPI } from "../../api";
 import { calculateRouteDistance } from "../utils/helpers";
 import { fetchRideRatings, submitRating } from "../utils/ratingActions";
+import { submitReport } from "../utils/reportActions";
 import useAuth from "../context/AuthContext/useAuth";
 import RatingModal from "./RatingModal";
+import ReportRideModal from "./ReportRideModal";
 import {
   Card,
   Button,
@@ -760,6 +762,7 @@ function GridDetailsLayout({
   showPassengerRatingActions,
   hasRated,
   onRatePassenger,
+  onReportRide,
 }) {
   return (
     <Row gutter={[32, 32]}>
@@ -825,9 +828,7 @@ function GridDetailsLayout({
             type="text"
             danger
             icon={<WarningOutlined />}
-            onClick={() =>
-              Modal.info({ title: "Report", content: "Report ride submitted." })
-            }
+            onClick={onReportRide}
             style={{ padding: 0 }}
           >
             Report ride
@@ -1028,6 +1029,10 @@ export default function RideDetails() {
   const [ratingTarget, setRatingTarget] = useState(null);
   const [submittingRating, setSubmittingRating] = useState(false);
 
+  // Report states
+  const [reportTarget, setReportTarget] = useState(null);
+  const [submittingReport, setSubmittingReport] = useState(false);
+
   const fetchRatings = () => fetchRideRatings(id, setRatings);
 
   const fetchRideData = async () => {
@@ -1087,6 +1092,12 @@ export default function RideDetails() {
       setSubmittingRating,
       setRatingTarget,
       fetchRatings,
+    });
+
+  const handleSubmitReport = (values, form) =>
+    submitReport(ride, user, values, form, {
+      setSubmittingReport,
+      setReportTarget,
     });
 
   useEffect(() => {
@@ -1224,12 +1235,19 @@ export default function RideDetails() {
             name: p.passengerName || "Passenger",
           })
         }
+        onReportRide={() => setReportTarget(ride)}
       />
       <RatingModal
         target={ratingTarget}
         onCancel={() => setRatingTarget(null)}
         onSubmit={handleSubmitRating}
         submitting={submittingRating}
+      />
+      <ReportRideModal
+        target={reportTarget}
+        onCancel={() => setReportTarget(null)}
+        onSubmit={handleSubmitReport}
+        submitting={submittingReport}
       />
     </div>
   );

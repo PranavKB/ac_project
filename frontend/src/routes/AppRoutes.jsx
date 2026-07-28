@@ -20,6 +20,7 @@ import AdminUsers from "../pages/Admin/AdminUsers";
 import AdminRides from "../pages/Admin/AdminRides";
 import AdminEnvironmentalAnalytics from "../pages/Admin/AdminEnvironmentalAnalytics";
 import AdminReputationAnalytics from "../pages/Admin/AdminReputationAnalytics";
+import AdminReports from "../pages/Admin/AdminReports";
 import AdminNotifications from "../pages/Admin/AdminNotifications";
 import AdminSettings from "../pages/Admin/AdminSettings";
 
@@ -41,7 +42,7 @@ function AppRoutes() {
           <Route
             path="/profile"
             element={
-              <ProtectedRoute allowedRoles={["PASSENGER", "DRIVER", "USER"]}>
+              <ProtectedRoute allowedRoles={["PASSENGER", "DRIVER"]}>
                 <Profile />
               </ProtectedRoute>
             }
@@ -70,6 +71,7 @@ function AppRoutes() {
               path="analytics/reputation"
               element={<AdminReputationAnalytics />}
             />
+            <Route path="reports" element={<AdminReports />} />
             <Route path="notifications" element={<AdminNotifications />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>
@@ -78,7 +80,7 @@ function AppRoutes() {
           <Route
             path="/rides/:id"
             element={
-              <ProtectedRoute allowedRoles={["PASSENGER", "DRIVER", "USER"]}>
+              <ProtectedRoute allowedRoles={["PASSENGER", "DRIVER", "ADMIN"]}>
                 <RideDetails />
               </ProtectedRoute>
             }
@@ -86,7 +88,7 @@ function AppRoutes() {
           <Route
             path="/ride/:id"
             element={
-              <ProtectedRoute allowedRoles={["PASSENGER", "DRIVER", "USER"]}>
+              <ProtectedRoute allowedRoles={["PASSENGER", "DRIVER", "ADMIN"]}>
                 <RideDetails />
               </ProtectedRoute>
             }
@@ -96,7 +98,7 @@ function AppRoutes() {
           <Route
             path="/passenger"
             element={
-              <ProtectedRoute allowedRoles={["PASSENGER", "DRIVER", "USER"]}>
+              <ProtectedRoute allowedRoles={["PASSENGER", "DRIVER"]}>
                 <PassengerDashboard defaultView="all" />
               </ProtectedRoute>
             }
@@ -104,7 +106,7 @@ function AppRoutes() {
           <Route
             path="/passenger/search"
             element={
-              <ProtectedRoute allowedRoles={["PASSENGER", "DRIVER", "USER"]}>
+              <ProtectedRoute allowedRoles={["PASSENGER", "DRIVER"]}>
                 <PassengerDashboard defaultView="search" />
               </ProtectedRoute>
             }
@@ -112,7 +114,7 @@ function AppRoutes() {
           <Route
             path="/passenger/bookings"
             element={
-              <ProtectedRoute allowedRoles={["PASSENGER", "DRIVER", "USER"]}>
+              <ProtectedRoute allowedRoles={["PASSENGER", "DRIVER"]}>
                 <PassengerDashboard defaultView="bookings" />
               </ProtectedRoute>
             }
@@ -122,7 +124,7 @@ function AppRoutes() {
           <Route
             path="/search"
             element={
-              <ProtectedRoute allowedRoles={["PASSENGER", "DRIVER", "USER"]}>
+              <ProtectedRoute allowedRoles={["PASSENGER", "DRIVER"]}>
                 <SearchRide />
               </ProtectedRoute>
             }
@@ -132,7 +134,7 @@ function AppRoutes() {
           <Route
             path="/driver"
             element={
-              <ProtectedRoute allowedRoles={["DRIVER", "PASSENGER", "USER"]}>
+              <ProtectedRoute allowedRoles={["DRIVER", "PASSENGER"]}>
                 <DriverDashboard />
               </ProtectedRoute>
             }
