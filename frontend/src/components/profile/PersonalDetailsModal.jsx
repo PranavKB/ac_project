@@ -17,7 +17,7 @@ export default function PersonalDetailsModal({
       open={open}
       onCancel={onCancel}
       onOk={() => form.submit()}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form form={form} layout="vertical" onFinish={onFinish}>
         <Form.Item

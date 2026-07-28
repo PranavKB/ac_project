@@ -165,12 +165,6 @@ export default function AboutTabContent({
   user,
   avatarInitial,
   profileCompletion,
-  govtIdVerified,
-  setGovtIdVerified,
-  emailVerified,
-  setEmailVerified,
-  phoneVerified,
-  setPhoneVerified,
   bio,
   preferences,
   vehicle,
@@ -190,14 +184,7 @@ export default function AboutTabContent({
         setEditAboutOpen={setEditAboutOpen}
       />
 
-      <VerificationListCard
-        govtIdVerified={govtIdVerified}
-        setGovtIdVerified={setGovtIdVerified}
-        emailVerified={emailVerified}
-        setEmailVerified={setEmailVerified}
-        phoneVerified={phoneVerified}
-        setPhoneVerified={setPhoneVerified}
-      />
+      <VerificationListCard email={user?.data?.email} />
 
       <BioAndPreferencesCard
         bio={bio}

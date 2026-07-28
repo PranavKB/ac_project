@@ -36,6 +36,10 @@ public class User {
 
     private Instant createdAt = Instant.now();
 
+    private String bio;
+    private Preferences preferences;
+    private VehicleDetails vehicleDetails;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -44,5 +48,24 @@ public class User {
         private double reliabilityScore = 80.0;
         private double comfortScore = 80.0;
         private String aiSummary = "New user. No rides yet.";
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Preferences {
+        private String chattiness;
+        private String music;
+        private String smoking;
+        private String pets;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class VehicleDetails {
+        private String model;
+        private String color;
+        private String plateNumber;
     }
 }

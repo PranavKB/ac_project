@@ -44,6 +44,9 @@ public class UserController {
         if (updatedUser.getName() != null) user.setName(updatedUser.getName());
         if (updatedUser.getEmail() != null) user.setEmail(updatedUser.getEmail());
         if (updatedUser.getPhone() != null) user.setPhone(updatedUser.getPhone());
+        if (updatedUser.getBio() != null) user.setBio(updatedUser.getBio());
+        if (updatedUser.getPreferences() != null) user.setPreferences(updatedUser.getPreferences());
+        if (updatedUser.getVehicleDetails() != null) user.setVehicleDetails(updatedUser.getVehicleDetails());
 
         User saved = userRepository.save(user);
         saved.setPassword(null);

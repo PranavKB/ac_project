@@ -11,7 +11,7 @@ export default function VehicleModal({ open, onCancel, form, onFinish }) {
       open={open}
       onCancel={onCancel}
       onOk={() => form.submit()}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form form={form} layout="vertical" onFinish={onFinish}>
         <Form.Item

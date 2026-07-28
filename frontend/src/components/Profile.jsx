@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import useAuth from "../context/AuthContext/useAuth";
-import { userAPI, rideAPI, requestAPI } from "../../api";
-import { updateUserProfile } from "../utils/profileActions";
+import { userAPI } from "../../api";
+import { updateUserProfile, fetchUserTrips } from "../utils/profileActions";
 import PersonalDetailsModal from "./profile/PersonalDetailsModal";
 import BioModal from "./profile/BioModal";
 import PreferencesModal from "./profile/PreferencesModal";
@@ -19,11 +19,6 @@ export default function Profile() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // States for verification options
-  const [govtIdVerified, setGovtIdVerified] = useState(false);
-  const [emailVerified, setEmailVerified] = useState(false);
-  const [phoneVerified, setPhoneVerified] = useState(false);
 
   // Profile data states
   const [bio, setBio] = useState("");
@@ -55,9 +50,6 @@ export default function Profile() {
       const data = uDetails?.data || uDetails;
 
       setBio(data.bio || "");
-      setGovtIdVerified(!!data.isGovtIdVerified);
-      setEmailVerified(!!data.isEmailVerified);
-      setPhoneVerified(!!data.isPhoneVerified);
       setPreferences(data.preferences || {});
       setVehicle(data.vehicleDetails || {});
       setReputation(data.reputationProfile || {});
@@ -71,13 +63,7 @@ export default function Profile() {
       prefsForm.setFieldsValue(data.preferences || {});
       vehicleForm.setFieldsValue(data.vehicleDetails || {});
 
-      if (isDriverMode) {
-        const rides = await rideAPI.getByDriver(user.data.id);
-        setUserTrips(rides?.data || rides || []);
-      } else {
-        const reqs = await requestAPI.getByPassenger(user.data.id);
-        setUserTrips(reqs?.data || reqs || []);
-      }
+      setUserTrips(await fetchUserTrips(user.data.id, isDriverMode));
     } catch (err) {
       console.error("Failed to load profile details:", err);
       setError("Failed to load profile details.");
@@ -94,9 +80,6 @@ export default function Profile() {
 
   const handleUpdateDetails = (values) =>
     updateUserProfile(user.data.id, values, {
-      govtIdVerified,
-      emailVerified,
-      phoneVerified,
       successMsg: "Personal details updated successfully!",
       setOpen: setEditAboutOpen,
       callback: fetchProfileData,
@@ -107,9 +90,6 @@ export default function Profile() {
       user.data.id,
       { bio: values.bio },
       {
-        govtIdVerified,
-        emailVerified,
-        phoneVerified,
         successMsg: "Bio updated successfully!",
         setOpen: setEditBioOpen,
         callback: fetchProfileData,
@@ -121,9 +101,6 @@ export default function Profile() {
       user.data.id,
       { preferences: values },
       {
-        govtIdVerified,
-        emailVerified,
-        phoneVerified,
         successMsg: "Travel preferences updated!",
         setOpen: setEditPrefsOpen,
         callback: fetchProfileData,
@@ -135,9 +112,6 @@ export default function Profile() {
       user.data.id,
       { vehicleDetails: values },
       {
-        govtIdVerified,
-        emailVerified,
-        phoneVerified,
         successMsg: "Vehicle details updated successfully!",
         setOpen: setEditVehicleOpen,
         callback: fetchProfileData,
@@ -162,7 +136,8 @@ export default function Profile() {
   let completionItems = 0;
   if (user.data.name) completionItems += 25;
   if (bio) completionItems += 25;
-  if (govtIdVerified || emailVerified || phoneVerified) completionItems += 25;
+  // Email is always verified — logging in requires the registered email.
+  completionItems += 25;
   if (preferences && Object.keys(preferences).length > 0) completionItems += 25;
   const profileCompletion = completionItems;
 
@@ -195,12 +170,6 @@ export default function Profile() {
                 user={user}
                 avatarInitial={avatarInitial}
                 profileCompletion={profileCompletion}
-                govtIdVerified={govtIdVerified}
-                setGovtIdVerified={setGovtIdVerified}
-                emailVerified={emailVerified}
-                setEmailVerified={setEmailVerified}
-                phoneVerified={phoneVerified}
-                setPhoneVerified={setPhoneVerified}
                 bio={bio}
                 preferences={preferences}
                 vehicle={vehicle}

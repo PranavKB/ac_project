@@ -195,7 +195,10 @@ function TripsHistoryCard({ isDriverMode, userTrips, navigate }) {
                     {sourceLabel} {" -> "} {destLabel}
                   </div>
                   <Text type="secondary" style={{ fontSize: "0.85rem" }}>
-                    Price per seat: ₹{trip.pricePerSeat || "1,130"}
+                    Price per seat:{" "}
+                    {trip.pricePerSeat
+                      ? `₹${trip.pricePerSeat}`
+                      : "Not specified"}
                   </Text>
                 </div>
                 <Tag color={tagColors[displayStatus] || "blue"}>

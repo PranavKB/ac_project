@@ -1,14 +1,7 @@
-import { Card, Space, Checkbox } from "antd";
-import { CheckCircleOutlined } from "@ant-design/icons";
+import { Card, Space } from "antd";
+import { CheckCircleOutlined, MailOutlined } from "@ant-design/icons";
 
-export default function VerificationListCard({
-  govtIdVerified,
-  setGovtIdVerified,
-  emailVerified,
-  setEmailVerified,
-  phoneVerified,
-  setPhoneVerified,
-}) {
+export default function VerificationListCard({ email }) {
   return (
     <Card
       title={
@@ -18,65 +11,19 @@ export default function VerificationListCard({
       }
       style={{ borderRadius: "16px", border: "1px solid #eef0f2" }}
     >
-      <Space orientation="vertical" size="middle" style={{ width: "100%" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <Checkbox
-            checked={govtIdVerified}
-            onChange={(e) => setGovtIdVerified(e.target.checked)}
-          >
-            Verified Government ID
-          </Checkbox>
-          {govtIdVerified && (
-            <CheckCircleOutlined
-              style={{ color: "#52c41a", fontSize: "1.2rem" }}
-            />
-          )}
-        </div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <Checkbox
-            checked={emailVerified}
-            onChange={(e) => setEmailVerified(e.target.checked)}
-          >
-            Verify Email Address
-          </Checkbox>
-          {emailVerified && (
-            <CheckCircleOutlined
-              style={{ color: "#52c41a", fontSize: "1.2rem" }}
-            />
-          )}
-        </div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <Checkbox
-            checked={phoneVerified}
-            onChange={(e) => setPhoneVerified(e.target.checked)}
-          >
-            Verify Phone Number
-          </Checkbox>
-          {phoneVerified && (
-            <CheckCircleOutlined
-              style={{ color: "#52c41a", fontSize: "1.2rem" }}
-            />
-          )}
-        </div>
-      </Space>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Space>
+          <MailOutlined style={{ color: "#708c91" }} />
+          <span>Email Verified{email ? ` — ${email}` : ""}</span>
+        </Space>
+        <CheckCircleOutlined style={{ color: "#52c41a", fontSize: "1.2rem" }} />
+      </div>
     </Card>
   );
 }
