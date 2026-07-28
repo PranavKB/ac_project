@@ -35,6 +35,7 @@ public class Notification {
         REQUEST_APPROVED,
         REQUEST_REJECTED,
         RIDE_STARTED,
-        RIDE_COMPLETED
+        RIDE_COMPLETED,
+        BACKUP_CANDIDATE_SUGGESTED
     }
 }

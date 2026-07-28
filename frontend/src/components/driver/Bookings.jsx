@@ -12,7 +12,7 @@ import { UserOutlined } from "@ant-design/icons";
 
 const { Text } = Typography;
 
-function RequestRow({ req, showStatusTag, actions }) {
+function RequestRow({ req, showStatusTag, actions, showSuggestedTag }) {
   return (
     <div
       style={{
@@ -27,9 +27,21 @@ function RequestRow({ req, showStatusTag, actions }) {
         <Avatar icon={<UserOutlined />} />
         <div>
           <div
-            style={{ color: "#054752", fontWeight: 700, fontSize: "0.95rem" }}
+            style={{
+              color: "#054752",
+              fontWeight: 700,
+              fontSize: "0.95rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
           >
             {req.passengerName}
+            {showSuggestedTag && (
+              <Tag color="gold" style={{ borderRadius: "999px" }}>
+                Suggested backup
+              </Tag>
+            )}
           </div>
           <div
             style={{ fontSize: "0.85rem", color: "#708c91", marginTop: "2px" }}
@@ -114,11 +126,12 @@ export default function Bookings({
             <div
               style={{ display: "flex", flexDirection: "column", gap: "12px" }}
             >
-              {pendingRequests.map((req) => (
+              {pendingRequests.map((req, index) => (
                 <RequestRow
                   key={req.id}
                   req={req}
                   showStatusTag={false}
+                  showSuggestedTag={index === 0 && req.priorityScore > 0}
                   actions={
                     <Space>
                       <Button
