@@ -1,8 +1,12 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { rideAPI, requestAPI, messageAPI } from "../../api";
-import { parseRideTimesAndLocations } from "../utils/rideDetailsHelpers";
+import { rideAPI, messageAPI } from "../../api";
 import {
+  parseRideTimesAndLocations,
+  parseDriverProfile,
+} from "../utils/rideDetailsHelpers";
+import {
+  fetchRideDetailsData,
   executeRideAction,
   requestRideBooking,
 } from "../utils/rideDetailsActions";
@@ -28,6 +32,7 @@ export default function RideDetails() {
 
   const [ride, setRide] = useState(null);
   const [passengers, setPassengers] = useState([]);
+  const [driverProfile, setDriverProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [bookingInProgress, setBookingInProgress] = useState(false);
@@ -48,21 +53,12 @@ export default function RideDetails() {
 
   const fetchRatings = () => fetchRideRatings(id, setRatings);
 
-  const fetchRideData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const resp = await rideAPI.get(id);
-      setRide(resp?.data || resp);
-      const reqResp = await requestAPI.getByRide(id).catch(() => null);
-      setPassengers(reqResp?.data || reqResp || []);
-      fetchRatings();
-    } catch {
-      setError("Failed to load ride details.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const fetchRideData = () =>
+    fetchRideDetailsData(
+      id,
+      { setLoading, setError, setRide, setPassengers, setDriverProfile },
+      fetchRatings,
+    );
 
   const fetchMessages = async () => {
     if (!id) return;
@@ -115,7 +111,6 @@ export default function RideDetails() {
 
   useEffect(() => {
     if (id) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchRideData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -141,6 +136,9 @@ export default function RideDetails() {
   const bookingStatus = myBooking?.status;
   const driverName = ride.driverName || "Driver";
   const driverInitial = driverName.charAt(0).toUpperCase();
+
+  const { driverRating, driverVehicle, driverSmokingPreference } =
+    parseDriverProfile(driverProfile);
 
   const {
     srcName,
@@ -216,6 +214,9 @@ export default function RideDetails() {
         destFull={destFull}
         driverInitial={driverInitial}
         driverName={driverName}
+        driverRating={driverRating}
+        driverVehicle={driverVehicle}
+        driverSmokingPreference={driverSmokingPreference}
         passengers={passengers}
         ride={ride}
         messages={messages}

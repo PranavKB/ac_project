@@ -193,9 +193,24 @@ export default function Navbar() {
           <Tooltip title="Trust Score">
             <Badge
               count={
-                <Space size={2} style={{ color: "#faad14", fontWeight: 600 }}>
-                  <StarFilled style={{ fontSize: "0.75rem" }} />
-                  {rating ? rating.toFixed(1) : "80.0"}
+                <Space
+                  direction="horizontal"
+                  align="center"
+                  size={4}
+                  style={{
+                    color: "#faad14",
+                    fontWeight: 600,
+                    display: "inline-flex",
+                  }}
+                >
+                  <StarFilled
+                    style={{
+                      fontSize: "0.75rem",
+                      display: "inline-flex",
+                      alignItems: "center",
+                    }}
+                  />
+                  <span>{rating ? rating.toFixed(1) : "80.0"}</span>
                 </Space>
               }
               style={{

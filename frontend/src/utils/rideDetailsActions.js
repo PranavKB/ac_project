@@ -1,5 +1,30 @@
 import { Modal } from "antd";
-import { requestAPI } from "../../api";
+import { rideAPI, requestAPI, userAPI } from "../../api";
+
+export const fetchRideDetailsData = async (
+  id,
+  { setLoading, setError, setRide, setPassengers, setDriverProfile },
+  fetchRatings,
+) => {
+  setLoading(true);
+  setError(null);
+  try {
+    const resp = await rideAPI.get(id);
+    const rideData = resp?.data || resp;
+    setRide(rideData);
+    const reqResp = await requestAPI.getByRide(id).catch(() => null);
+    setPassengers(reqResp?.data || reqResp || []);
+    if (rideData?.driverId) {
+      const driverResp = await userAPI.get(rideData.driverId).catch(() => null);
+      setDriverProfile(driverResp?.data || driverResp || null);
+    }
+    fetchRatings();
+  } catch {
+    setError("Failed to load ride details.");
+  } finally {
+    setLoading(false);
+  }
+};
 
 export const executeRideAction = async (actionFn, successMsg, callback) => {
   try {

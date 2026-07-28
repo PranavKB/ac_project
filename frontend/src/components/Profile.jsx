@@ -21,6 +21,7 @@ export default function Profile() {
   const [error, setError] = useState(null);
 
   // Profile data states
+  const [name, setName] = useState("");
   const [bio, setBio] = useState("");
   const [preferences, setPreferences] = useState(null);
   const [vehicle, setVehicle] = useState(null);
@@ -50,6 +51,7 @@ export default function Profile() {
       const uDetails = await userAPI.get(user.data.id);
       const data = uDetails?.data || uDetails;
 
+      setName(data.name || "");
       setBio(data.bio || "");
       setPreferences(data.preferences || {});
       setVehicle(data.vehicleDetails || {});
@@ -123,9 +125,7 @@ export default function Profile() {
   if (loading || !user) return <LoadingView />;
   if (error) return <ErrorView error={error} onGoBack={() => navigate(-1)} />;
 
-  const avatarInitial = user.data.name
-    ? user.data.name.charAt(0).toUpperCase()
-    : "U";
+  const avatarInitial = name ? name.charAt(0).toUpperCase() : "U";
   const memberSince = user.data.createdAt
     ? new Date(user.data.createdAt).toLocaleDateString("en-US", {
         month: "long",
@@ -135,7 +135,7 @@ export default function Profile() {
 
   // Calculating profile completeness metric
   let completionItems = 0;
-  if (user.data.name) completionItems += 25;
+  if (name) completionItems += 25;
   if (bio) completionItems += 25;
   // Email is always verified — logging in requires the registered email.
   completionItems += 25;
@@ -168,7 +168,8 @@ export default function Profile() {
             ),
             children: (
               <AboutTabContent
-                user={user}
+                name={name}
+                email={user.data.email}
                 avatarInitial={avatarInitial}
                 profileCompletion={profileCompletion}
                 bio={bio}

@@ -87,3 +87,23 @@ export const parseRideTimesAndLocations = (ride, passengerCount = 1) => {
     co2Kg,
   };
 };
+
+// Reputation scores are stored on a 0-100 scale; convert to a familiar 0-5 star rating.
+export const parseDriverProfile = (driverProfile) => {
+  const reputation = driverProfile?.reputationProfile;
+  const driverRating = reputation
+    ? (
+        (reputation.trustScore +
+          reputation.reliabilityScore +
+          reputation.comfortScore) /
+        3 /
+        20
+      ).toFixed(1)
+    : null;
+
+  return {
+    driverRating,
+    driverVehicle: driverProfile?.vehicleDetails,
+    driverSmokingPreference: driverProfile?.preferences?.smoking,
+  };
+};

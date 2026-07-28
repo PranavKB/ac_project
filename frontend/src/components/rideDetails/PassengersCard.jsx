@@ -5,6 +5,8 @@ const { Text } = Typography;
 
 export default function PassengersCard({
   passengers,
+  totalSeats,
+  filledSeats,
   showRatingActions,
   hasRated,
   onRatePassenger,
@@ -12,7 +14,16 @@ export default function PassengersCard({
   return (
     <Card
       title={
-        <span style={{ color: "#054752", fontWeight: 700 }}>Passengers</span>
+        <span style={{ color: "#054752", fontWeight: 700 }}>
+          Passengers
+          {totalSeats != null && filledSeats != null && (
+            <span
+              style={{ color: "#708c91", fontWeight: 500, marginLeft: "8px" }}
+            >
+              ({filledSeats}/{totalSeats} seats filled)
+            </span>
+          )}
+        </span>
       }
       style={{ borderRadius: "16px", border: "1px solid #eef0f2" }}
     >

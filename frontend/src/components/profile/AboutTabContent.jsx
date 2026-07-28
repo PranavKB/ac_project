@@ -162,7 +162,8 @@ function VehicleDetailsCard({ vehicle, setEditVehicleOpen }) {
 }
 
 export default function AboutTabContent({
-  user,
+  name,
+  email,
   avatarInitial,
   profileCompletion,
   bio,
@@ -178,13 +179,13 @@ export default function AboutTabContent({
     <Space orientation="vertical" size="large" style={{ width: "100%" }}>
       <ProfileHeaderCard
         avatarInitial={avatarInitial}
-        name={user?.data?.name}
-        email={user?.data?.email}
+        name={name}
+        email={email}
         profileCompletion={profileCompletion}
         setEditAboutOpen={setEditAboutOpen}
       />
 
-      <VerificationListCard email={user?.data?.email} />
+      <VerificationListCard email={email} />
 
       <BioAndPreferencesCard
         bio={bio}

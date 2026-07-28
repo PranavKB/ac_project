@@ -16,6 +16,9 @@ export default function GridDetailsLayout({
   destFull,
   driverInitial,
   driverName,
+  driverRating,
+  driverVehicle,
+  driverSmokingPreference,
   passengers,
   ride,
   messages,
@@ -59,12 +62,21 @@ export default function GridDetailsLayout({
           <DriverDetailsCard
             driverInitial={driverInitial}
             driverName={driverName}
+            driverRating={driverRating}
+            driverVehicle={driverVehicle}
+            driverSmokingPreference={driverSmokingPreference}
             showRateButton={showDriverRateButton}
             alreadyRatedDriver={alreadyRatedDriver}
             onRateDriver={onRateDriver}
           />
           <PassengersCard
             passengers={passengers}
+            totalSeats={ride.totalSeats}
+            filledSeats={
+              ride.totalSeats != null && ride.availableSeats != null
+                ? ride.totalSeats - ride.availableSeats
+                : null
+            }
             showRatingActions={showPassengerRatingActions}
             hasRated={hasRated}
             onRatePassenger={onRatePassenger}
