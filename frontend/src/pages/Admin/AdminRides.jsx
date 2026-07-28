@@ -10,6 +10,7 @@ import {
   Typography,
   Space,
   Descriptions,
+  Tooltip,
 } from "antd";
 import { EyeOutlined, DeleteOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
@@ -157,17 +158,21 @@ export default function AdminRides() {
       key: "actions",
       render: (_, record) => (
         <Space>
-          <Button
-            icon={<EyeOutlined />}
-            size="small"
-            onClick={() => setViewingRide(record)}
-          />
+          <Tooltip title="View ride details">
+            <Button
+              icon={<EyeOutlined />}
+              size="small"
+              onClick={() => setViewingRide(record)}
+            />
+          </Tooltip>
           <Popconfirm
             title="Delete this ride?"
             description="This action cannot be undone."
             onConfirm={() => handleDelete(record.id)}
           >
-            <Button icon={<DeleteOutlined />} size="small" danger />
+            <Tooltip title="Delete ride">
+              <Button icon={<DeleteOutlined />} size="small" danger />
+            </Tooltip>
           </Popconfirm>
         </Space>
       ),

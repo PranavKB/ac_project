@@ -12,6 +12,7 @@ import {
   Space,
   Row,
   Col,
+  Tooltip,
 } from "antd";
 import { EyeOutlined, DeleteOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
@@ -168,17 +169,21 @@ export default function AdminUsers() {
       key: "actions",
       render: (_, record) => (
         <Space>
-          <Button
-            icon={<EyeOutlined />}
-            size="small"
-            onClick={() => setViewingUser(record)}
-          />
+          <Tooltip title="View profile">
+            <Button
+              icon={<EyeOutlined />}
+              size="small"
+              onClick={() => setViewingUser(record)}
+            />
+          </Tooltip>
           <Popconfirm
             title="Delete this user?"
             description="This action cannot be undone."
             onConfirm={() => handleDelete(record.id)}
           >
-            <Button icon={<DeleteOutlined />} size="small" danger />
+            <Tooltip title="Delete user">
+              <Button icon={<DeleteOutlined />} size="small" danger />
+            </Tooltip>
           </Popconfirm>
         </Space>
       ),

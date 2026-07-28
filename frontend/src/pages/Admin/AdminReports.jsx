@@ -9,6 +9,7 @@ import {
   Typography,
   Space,
   Descriptions,
+  Tooltip,
 } from "antd";
 import {
   EyeOutlined,
@@ -186,24 +187,30 @@ export default function AdminReports() {
       key: "actions",
       render: (_, record) => (
         <Space>
-          <Button
-            icon={<EyeOutlined />}
-            size="small"
-            onClick={() => setViewingReport(record)}
-          />
+          <Tooltip title="View report details">
+            <Button
+              icon={<EyeOutlined />}
+              size="small"
+              onClick={() => setViewingReport(record)}
+            />
+          </Tooltip>
           {record.status === "PENDING" && (
             <>
               <Popconfirm
                 title="Mark this report as reviewed?"
                 onConfirm={() => handleReview(record.id)}
               >
-                <Button icon={<CheckOutlined />} size="small" />
+                <Tooltip title="Mark as reviewed">
+                  <Button icon={<CheckOutlined />} size="small" />
+                </Tooltip>
               </Popconfirm>
               <Popconfirm
                 title="Dismiss this report?"
                 onConfirm={() => handleDismiss(record.id)}
               >
-                <Button icon={<CloseOutlined />} size="small" danger />
+                <Tooltip title="Dismiss report">
+                  <Button icon={<CloseOutlined />} size="small" danger />
+                </Tooltip>
               </Popconfirm>
             </>
           )}
@@ -213,7 +220,9 @@ export default function AdminReports() {
               description="This action cannot be undone."
               onConfirm={() => handleDeleteRide(record.rideId)}
             >
-              <Button icon={<DeleteOutlined />} size="small" danger />
+              <Tooltip title="Delete ride">
+                <Button icon={<DeleteOutlined />} size="small" danger />
+              </Tooltip>
             </Popconfirm>
           )}
           {record.reportedUserId && (
@@ -222,7 +231,9 @@ export default function AdminReports() {
               description="This action cannot be undone."
               onConfirm={() => handleDeleteUser(record.reportedUserId)}
             >
-              <Button icon={<UserDeleteOutlined />} size="small" danger />
+              <Tooltip title="Delete reported user">
+                <Button icon={<UserDeleteOutlined />} size="small" danger />
+              </Tooltip>
             </Popconfirm>
           )}
         </Space>
