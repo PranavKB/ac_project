@@ -80,7 +80,7 @@ export default function GridDetailsLayout({
             />
           )}
           <Alert
-            message={
+            title={
               <div style={{ color: "#054752" }}>
                 By choosing this trip, you will help avoid{" "}
                 <strong>≈{co2Kg > 0 ? co2Kg.toFixed(1) : "—"} kg of CO₂</strong>

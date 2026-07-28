@@ -20,7 +20,7 @@ export default function VerificationListCard({ email }) {
       >
         <Space>
           <MailOutlined style={{ color: "#708c91" }} />
-          <span>Email Verified{email ? ` — ${email}` : ""}</span>
+          <span>Email Verified{email ? `: ${email}` : ""}</span>
         </Space>
         <CheckCircleOutlined style={{ color: "#52c41a", fontSize: "1.2rem" }} />
       </div>

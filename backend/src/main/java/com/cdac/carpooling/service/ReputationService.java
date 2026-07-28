@@ -58,15 +58,15 @@ public class ReputationService {
 
     private String buildSummary(double overallScore) {
         if (overallScore >= 90) {
-            return "Excellent reputation — highly trusted and reliable.";
+            return "Excellent reputation: highly trusted and reliable.";
         }
         if (overallScore >= 75) {
             return "Good standing with the community.";
         }
         if (overallScore >= 60) {
-            return "Average standing — some room to improve.";
+            return "Average standing: some room to improve.";
         }
-        return "Below average — flagged for review.";
+        return "Below average: flagged for review.";
     }
 
     private double round(double value) {

@@ -58,7 +58,7 @@ function TokenInvalidView({ error, onReset }) {
         }}
       >
         <Alert
-          message={error}
+          title={error}
           type="error"
           showIcon
           style={{ marginBottom: "20px", borderRadius: "8px" }}
@@ -248,7 +248,7 @@ export default function RegisterPage() {
 
         {error && (
           <Alert
-            message={error}
+            title={error}
             type="error"
             showIcon
             style={{ marginBottom: "16px", borderRadius: "8px" }}

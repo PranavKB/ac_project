@@ -83,7 +83,7 @@ export default function RequestRegisterLinkPage() {
         {successMsg ? (
           <div style={{ textAlign: "center", padding: "16px 0" }}>
             <Alert
-              message={<span style={{ fontWeight: 700 }}>Link Sent!</span>}
+              title={<span style={{ fontWeight: 700 }}>Link Sent!</span>}
               description={
                 <Space orientation="vertical" style={{ marginTop: "8px" }}>
                   <Text>{successMsg}</Text>
@@ -130,7 +130,7 @@ export default function RequestRegisterLinkPage() {
 
             {error && (
               <Alert
-                message={error}
+                title={error}
                 type="error"
                 showIcon
                 style={{ marginBottom: "16px", borderRadius: "8px" }}
