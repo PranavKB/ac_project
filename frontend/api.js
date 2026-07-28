@@ -100,6 +100,16 @@ export const requestAPI = {
   },
 };
 
+export const adminAPI = {
+  getStats: async () => (await API.get("/admin/stats")).data,
+  getUsers: async () => (await API.get("/admin/users")).data,
+  deleteUser: async (id) => (await API.delete(`/admin/users/${id}`)).data,
+  banUser: async (id) => (await API.put(`/admin/users/${id}/ban`)).data,
+  unbanUser: async (id) => (await API.put(`/admin/users/${id}/unban`)).data,
+  getRides: async () => (await API.get("/admin/rides")).data,
+  deleteRide: async (id) => (await API.delete(`/admin/rides/${id}`)).data,
+};
+
 export const messageAPI = {
   send: async (msgData) => {
     const res = await API.post("/messages", msgData);

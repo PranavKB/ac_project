@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import StyleGuide from "../pages/StyleGuide/StyleGuide";
+import AdminDashboard from "../pages/Admin/AdminDashboard";
 import DriverDashboard from "../components/DriverDashboard";
 import PassengerDashboard from "../components/PassengerDashboard";
 import LoginPage from "../pages/Auth/LoginPage";
@@ -52,16 +53,7 @@ function AppRoutes() {
           path="/admin"
           element={
             <ProtectedRoute allowedRoles={["ADMIN"]}>
-              <div
-                style={{
-                  padding: "2rem",
-                  textAlign: "center",
-                  marginTop: "2rem",
-                }}
-              >
-                <h2>Admin Dashboard</h2>
-                <p>Welcome, Administrator.</p>
-              </div>
+              <AdminDashboard />
             </ProtectedRoute>
           }
         />
