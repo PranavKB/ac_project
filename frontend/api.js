@@ -180,6 +180,25 @@ export const reportAPI = {
   },
 };
 
+export const notificationAPI = {
+  getByUser: async (userId) => {
+    const res = await API.get(`/notifications/user/${userId}`);
+    return res.data;
+  },
+  getUnreadCount: async (userId) => {
+    const res = await API.get(`/notifications/user/${userId}/unread-count`);
+    return res.data;
+  },
+  markRead: async (id) => {
+    const res = await API.put(`/notifications/${id}/read`);
+    return res.data;
+  },
+  markAllRead: async (userId) => {
+    const res = await API.put(`/notifications/user/${userId}/read-all`);
+    return res.data;
+  },
+};
+
 export const userAPI = {
   get: async (id) => {
     const res = await API.get(`/users/${id}`);

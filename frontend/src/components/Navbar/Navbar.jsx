@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import useAuth from "../../context/AuthContext/useAuth";
+import NotificationBell from "./NotificationBell";
 import { Layout, Button, Avatar, Dropdown, Space, Tooltip, Badge } from "antd";
 import {
   PlusOutlined,
@@ -208,6 +209,8 @@ export default function Navbar() {
             />
           </Tooltip>
         </Space>
+
+        <NotificationBell userId={user.data.id} />
 
         {/* User avatar with dropdown */}
         <Dropdown

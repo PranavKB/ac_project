@@ -1,6 +1,7 @@
 package com.cdac.carpooling.service;
 
 import com.cdac.carpooling.dto.RideRequestDto;
+import com.cdac.carpooling.model.Notification;
 import com.cdac.carpooling.model.Ride;
 import com.cdac.carpooling.model.RideRequest;
 import com.cdac.carpooling.repository.RideRepository;
@@ -18,6 +19,7 @@ public class RideRequestService {
 
     private final RideRequestRepository rideRequestRepository;
     private final RideRepository rideRepository;
+    private final NotificationService notificationService;
 
     public RideRequest createRequest(RideRequestDto dto) {
         List<RideRequest> existing = rideRequestRepository.findByPassengerId(dto.getPassengerId());
@@ -43,7 +45,18 @@ public class RideRequestService {
         request.setCreatedAt(Instant.now());
         request.setPriorityScore(0.0);
 
-        return rideRequestRepository.save(request);
+        RideRequest saved = rideRequestRepository.save(request);
+
+        rideRepository.findById(dto.getRideId()).ifPresent(ride ->
+                notificationService.create(
+                        ride.getDriverId(),
+                        Notification.Type.BOOKING_REQUESTED,
+                        "New ride request",
+                        (dto.getPassengerName() != null ? dto.getPassengerName() : "A passenger")
+                                + " requested to join your ride.",
+                        dto.getRideId()));
+
+        return saved;
     }
 
     public List<RideRequest> getRequestsByRide(String rideId) {
@@ -66,6 +79,14 @@ public class RideRequestService {
             } else if ("APPROVED".equals(oldStatus)
                     && ("REJECTED".equals(status) || "CANCELLED".equals(status))) {
                 releaseSeat(request);
+            }
+
+            if ("APPROVED".equals(status)) {
+                notificationService.create(request.getPassengerId(), Notification.Type.REQUEST_APPROVED,
+                        "Request approved", "Your ride request was approved.", request.getRideId());
+            } else if ("REJECTED".equals(status)) {
+                notificationService.create(request.getPassengerId(), Notification.Type.REQUEST_REJECTED,
+                        "Request rejected", "Your ride request was rejected.", request.getRideId());
             }
 
             request.setStatus(status);

@@ -19,10 +19,12 @@ import com.cdac.carpooling.dto.LocationDto;
 import com.cdac.carpooling.dto.RideCreationRequest;
 import com.cdac.carpooling.dto.RideSearchRequest;
 import com.cdac.carpooling.model.LocationPoint;
+import com.cdac.carpooling.model.Notification;
 import com.cdac.carpooling.model.Ride;
 import com.cdac.carpooling.repository.RideRepository;
 import com.cdac.carpooling.service.CarbonService;
 import com.cdac.carpooling.service.H3Service;
+import com.cdac.carpooling.service.NotificationService;
 import com.cdac.carpooling.service.RideMatchingService;
 import com.cdac.carpooling.service.RoutingService;
 
@@ -38,6 +40,7 @@ public class RideController {
     private final RideRepository rideRepository;
     private final CarbonService carbonService;
     private final RoutingService routingService;
+    private final NotificationService notificationService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<Object>> createRide(@Valid @RequestBody RideCreationRequest request) {
@@ -125,7 +128,8 @@ public class RideController {
             String departureDate = request.getDepartureDate();
             List<List<Double>> routeCoords = routingService.getRouteCoordinates(pSrcLat, pSrcLng, pDestLat, pDestLng);
             List<String> passengerH3 = h3Service.pathToH3Segments(routeCoords);
-            List<Map<String, Object>> matches = rideMatchingService.findMatchingRides(pSrcLat, pSrcLng, pDestLat, pDestLng, passengerH3, departureDate);
+            List<Map<String, Object>> matches = rideMatchingService.findMatchingRides(pSrcLat, pSrcLng, pDestLat,
+                    pDestLng, passengerH3, departureDate);
             return ApiResponse.success(matches, "Matching rides fetched successfully");
         } catch (Exception e) {
             return ApiResponse.error("Something went wrong on the server: " + e.getMessage());
@@ -160,6 +164,14 @@ public class RideController {
         ride.setExecutionDetails(details);
         ride.setStatus("ONGOING");
         Ride saved = rideRepository.save(ride);
+
+        if (saved.getPassengerIds() != null) {
+            for (String passengerId : saved.getPassengerIds()) {
+                notificationService.create(passengerId, Notification.Type.RIDE_STARTED,
+                        "Ride started", "Your ride has started.", saved.getId());
+            }
+        }
+
         return ApiResponse.success(saved, "Ride started successfully");
     }
 
@@ -218,12 +230,16 @@ public class RideController {
 
         // Credit the driver's cumulative CO2 total
         carbonService.creditCarbonToDriver(ride.getDriverId(), offset.getNetReducedCo2Kg());
+        notificationService.create(ride.getDriverId(), Notification.Type.RIDE_COMPLETED, "Ride completed",
+                "Your ride is complete: " + offset.getNetReducedCo2Kg() + " kg CO2 saved.", saved.getId());
 
         // Credit each passenger's cumulative CO2 total
         if (ride.getPassengerIds() != null) {
             double passengerCo2 = carbonService.calculatePassengerOffset(distanceKm);
             for (String passengerId : ride.getPassengerIds()) {
                 carbonService.creditCarbonToUser(passengerId, passengerCo2);
+                notificationService.create(passengerId, Notification.Type.RIDE_COMPLETED, "Ride completed",
+                        "Your ride is complete: " + passengerCo2 + " kg CO2 saved.", saved.getId());
             }
         }
 
