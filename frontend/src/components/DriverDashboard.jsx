@@ -1,537 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import useAuth from "../context/AuthContext/useAuth";
-import MapComponent from "./MapComponent";
-import PublishRide from "./PublishRide";
-import { rideAPI, requestAPI, routeAPI } from "../../api";
+import OfferARide from "./driver/OfferARide";
+import PostedTrips from "./driver/PostedTrips";
+import Bookings from "./driver/Bookings";
+import { rideAPI, requestAPI } from "../../api";
 import { calculateRouteDistance } from "../utils/helpers";
-import {
-  Card,
-  Tabs,
-  Button,
-  Tag,
-  Select,
-  Row,
-  Col,
-  Space,
-  Badge,
-  Modal,
-  Empty,
-  Typography,
-  Avatar,
-} from "antd";
-import {
-  PlayCircleOutlined,
-  FileTextOutlined,
-  SafetyCertificateOutlined,
-  UserOutlined,
-  RightOutlined,
-} from "@ant-design/icons";
+import { updateMapRoute, executeDriverAction } from "../utils/driverActions";
+import { Tabs, Badge, Modal } from "antd";
 
-const { Title, Text } = Typography;
-
-// --- Helper sub-components to keep functions under 250 lines ---
-
-function PublishTabContent({ onPublishSuccess, onMapUpdate, mapProps }) {
-  return (
-    <Row gutter={[32, 32]}>
-      <Col xs={24} md={11}>
-        <Card
-          title={
-            <Title
-              level={3}
-              style={{ margin: 0, color: "#054752", fontWeight: 800 }}
-            >
-              Offer a Ride
-            </Title>
-          }
-          style={{ borderRadius: "16px", border: "1px solid #eef0f2" }}
-        >
-          <PublishRide
-            isEmbed={true}
-            onPublishSuccess={onPublishSuccess}
-            onMapUpdate={onMapUpdate}
-          />
-        </Card>
-      </Col>
-      <Col xs={24} md={13}>
-        <Card
-          style={{
-            borderRadius: "16px",
-            border: "1px solid #eef0f2",
-            overflow: "hidden",
-            height: "100%",
-            minHeight: "500px",
-          }}
-          styles={{ body: { padding: 0, height: "100%" } }}
-        >
-          <div style={{ width: "100%", height: "550px", position: "relative" }}>
-            <MapComponent
-              source={mapProps.source}
-              destination={mapProps.destination}
-              routeCoords={mapProps.routeCoords}
-            />
-          </div>
-        </Card>
-      </Col>
-    </Row>
-  );
-}
-
-function PostedTripsTabContent({
-  postedRides,
-  loadingRides,
-  selectedRide,
-  selectActiveRide,
-  mapProps,
-  handleStartTrip,
-  handleCompleteTrip,
-  onNavigateToRide,
-}) {
-  return (
-    <Row gutter={[32, 32]}>
-      <Col xs={24} md={9}>
-        <Card
-          title={
-            <span style={{ color: "#054752", fontWeight: 800 }}>
-              My Posted Trips
-            </span>
-          }
-          style={{ borderRadius: "16px", border: "1px solid #eef0f2" }}
-        >
-          {loadingRides ? (
-            <div style={{ textAlign: "center", padding: "20px" }}>
-              <Text type="secondary">Loading posted routes...</Text>
-            </div>
-          ) : postedRides.length > 0 ? (
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "12px" }}
-            >
-              {postedRides.map((ride) => (
-                <div
-                  key={ride.id}
-                  onClick={() => selectActiveRide(ride)}
-                  style={{
-                    border:
-                      selectedRide?.id === ride.id
-                        ? "1px solid #00aff5"
-                        : "1px solid #eef0f2",
-                    borderRadius: "12px",
-                    padding: "16px",
-                    cursor: "pointer",
-                    backgroundColor:
-                      selectedRide?.id === ride.id
-                        ? "rgba(0,175,245,0.02)"
-                        : "transparent",
-                    transition: "all 0.2s",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <div>
-                    <div
-                      style={{
-                        color: "#054752",
-                        fontWeight: 700,
-                        fontSize: "0.95rem",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      {ride.source?.name.split(",")[0]} {" -> "}
-                      {ride.destination?.name.split(",")[0]}
-                    </div>
-                    <Text type="secondary" style={{ fontSize: "0.85rem" }}>
-                      {ride.availableSeats} seat(s) left | Status: {ride.status}
-                    </Text>
-                  </div>
-                  <RightOutlined
-                    style={{
-                      color:
-                        selectedRide?.id === ride.id ? "#00aff5" : "#708c91",
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <Empty description="No posted trips yet." />
-          )}
-        </Card>
-      </Col>
-
-      <Col xs={24} md={15}>
-        <Space orientation="vertical" size="large" style={{ width: "100%" }}>
-          <Card
-            style={{
-              borderRadius: "16px",
-              border: "1px solid #eef0f2",
-              overflow: "hidden",
-            }}
-            styles={{ body: { padding: 0 } }}
-          >
-            <div
-              style={{ width: "100%", height: "400px", position: "relative" }}
-            >
-              <MapComponent
-                source={mapProps.source}
-                destination={mapProps.destination}
-                routeCoords={mapProps.routeCoords}
-              />
-            </div>
-          </Card>
-
-          {selectedRide && (
-            <Card style={{ borderRadius: "16px", border: "1px solid #eef0f2" }}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  borderBottom: "1px solid #f6f7f9",
-                  paddingBottom: "16px",
-                  marginBottom: "16px",
-                }}
-              >
-                <div>
-                  <Title
-                    level={4}
-                    style={{
-                      margin: "0 0 4px",
-                      color: "#054752",
-                      fontWeight: 800,
-                    }}
-                  >
-                    {selectedRide.source?.name.split(",")[0]} {" -> "}
-                    {selectedRide.destination?.name.split(",")[0]}
-                  </Title>
-                  <Text type="secondary">
-                    Status: <Tag color="processing">{selectedRide.status}</Tag>
-                  </Text>
-                </div>
-                <Button
-                  type="default"
-                  shape="round"
-                  icon={<FileTextOutlined />}
-                  onClick={() => onNavigateToRide(selectedRide.id)}
-                >
-                  View Ride Details
-                </Button>
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <div>
-                  {selectedRide.status === "COMPLETED" && (
-                    <Text
-                      type="secondary"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                      }}
-                    >
-                      <SafetyCertificateOutlined style={{ color: "#52c41a" }} />
-                      Avoided:{" "}
-                      <strong>
-                        {selectedRide.executionDetails?.environmentalOffset?.netReducedCo2Kg?.toFixed(
-                          2,
-                        ) || "0.00"}{" "}
-                        kg CO₂
-                      </strong>
-                    </Text>
-                  )}
-                </div>
-
-                <div>
-                  {selectedRide.status === "ACTIVE" && (
-                    <Button
-                      type="primary"
-                      shape="round"
-                      icon={<PlayCircleOutlined />}
-                      onClick={handleStartTrip}
-                      style={{
-                        backgroundColor: "#52c41a",
-                        height: "40px",
-                        fontWeight: 600,
-                      }}
-                    >
-                      Start Trip
-                    </Button>
-                  )}
-
-                  {selectedRide.status === "ONGOING" && (
-                    <Button
-                      danger
-                      type="primary"
-                      shape="round"
-                      onClick={handleCompleteTrip}
-                      style={{ height: "40px", fontWeight: 600 }}
-                    >
-                      Complete Trip
-                    </Button>
-                  )}
-
-                  {selectedRide.status === "COMPLETED" && (
-                    <span
-                      style={{
-                        color: "#52c41a",
-                        fontWeight: 700,
-                        fontSize: "0.95rem",
-                      }}
-                    >
-                      ✓ Trip Completed Successfully
-                    </span>
-                  )}
-                </div>
-              </div>
-            </Card>
-          )}
-        </Space>
-      </Col>
-    </Row>
-  );
-}
-
-function RequestQueueTabContent({
-  postedRides,
-  selectedRide,
-  selectActiveRide,
-  pendingRequests,
-  acceptedPassengers,
-  loadingRequests,
-  handleAcceptRequest,
-  handleRejectRequest,
-}) {
-  return (
-    <div style={{ maxWidth: "800px", margin: "0 auto" }}>
-      <Space orientation="vertical" size="large" style={{ width: "100%" }}>
-        {postedRides.length > 0 && (
-          <Card style={{ borderRadius: "16px", border: "1px solid #eef0f2" }}>
-            <Space size="middle">
-              <Text strong style={{ color: "#054752" }}>
-                Managing Route:
-              </Text>
-              <Select
-                value={selectedRide?.id || ""}
-                onChange={(val) => {
-                  const selected = postedRides.find((r) => r.id === val);
-                  if (selected) selectActiveRide(selected);
-                }}
-                style={{ width: "280px" }}
-                options={postedRides.map((ride) => ({
-                  value: ride.id,
-                  label: `${ride.source?.name.split(",")[0]} -> ${ride.destination?.name.split(",")[0]} (${ride.status})`,
-                }))}
-              />
-            </Space>
-          </Card>
-        )}
-
-        {/* Pending Request list */}
-        <Card
-          title={
-            <span style={{ color: "#054752", fontWeight: 800 }}>
-              Riders Request Queue ({pendingRequests.length})
-            </span>
-          }
-          style={{ borderRadius: "16px", border: "1px solid #eef0f2" }}
-        >
-          {loadingRequests ? (
-            <div style={{ textAlign: "center", padding: "20px" }}>
-              <Text type="secondary">Loading requests...</Text>
-            </div>
-          ) : pendingRequests.length > 0 ? (
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "12px" }}
-            >
-              {pendingRequests.map((req) => (
-                <div
-                  key={req.id}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "12px 0",
-                    borderBottom: "1px solid #f6f7f9",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "12px",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Avatar icon={<UserOutlined />} />
-                    <div>
-                      <div
-                        style={{
-                          color: "#054752",
-                          fontWeight: 700,
-                          fontSize: "0.95rem",
-                        }}
-                      >
-                        {req.passengerName}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "0.85rem",
-                          color: "#708c91",
-                          marginTop: "2px",
-                        }}
-                      >
-                        {req.source?.name.split(",")[0]} {" -> "}
-                        {req.destination?.name.split(",")[0]}
-                      </div>
-                    </div>
-                  </div>
-                  <Space>
-                    <Button
-                      type="primary"
-                      size="small"
-                      shape="round"
-                      style={{ backgroundColor: "#52c41a" }}
-                      onClick={() => handleAcceptRequest(req.id)}
-                    >
-                      Accept
-                    </Button>
-                    <Button
-                      type="primary"
-                      danger
-                      size="small"
-                      shape="round"
-                      onClick={() => handleRejectRequest(req.id)}
-                    >
-                      Reject
-                    </Button>
-                  </Space>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <Empty description="No pending riders in queue." />
-          )}
-        </Card>
-
-        {/* Already Accepted Passengers list */}
-        <Card
-          title={
-            <span style={{ color: "#054752", fontWeight: 800 }}>
-              Already Accepted Passengers ({acceptedPassengers.length})
-            </span>
-          }
-          style={{ borderRadius: "16px", border: "1px solid #eef0f2" }}
-        >
-          {loadingRequests ? (
-            <div style={{ textAlign: "center", padding: "20px" }}>
-              <Text type="secondary">Loading bookings...</Text>
-            </div>
-          ) : acceptedPassengers.length > 0 ? (
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "12px" }}
-            >
-              {acceptedPassengers.map((req) => (
-                <div
-                  key={req.id}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "12px 0",
-                    borderBottom: "1px solid #f6f7f9",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "12px",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Avatar icon={<UserOutlined />} />
-                    <div>
-                      <div
-                        style={{
-                          color: "#054752",
-                          fontWeight: 700,
-                          fontSize: "0.95rem",
-                        }}
-                      >
-                        {req.passengerName}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "0.85rem",
-                          color: "#708c91",
-                          marginTop: "2px",
-                        }}
-                      >
-                        {req.source?.name.split(",")[0]} {" -> "}
-                        {req.destination?.name.split(",")[0]}
-                      </div>
-                    </div>
-                  </div>
-                  <Tag
-                    color="success"
-                    style={{ borderRadius: "999px", padding: "3px 10px" }}
-                  >
-                    {req.status}
-                  </Tag>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <Empty description="No accepted passengers on this trip yet." />
-          )}
-        </Card>
-      </Space>
-    </div>
-  );
-}
-
-const updateMapRoute = async (source, destination, setMapProps) => {
-  if (source && destination) {
-    const srcCoords = [
-      source.location.coordinates[0],
-      source.location.coordinates[1],
-    ];
-    const destCoords = [
-      destination.location.coordinates[0],
-      destination.location.coordinates[1],
-    ];
-    const routeCoords = await routeAPI.fetch(
-      { lat: srcCoords[0], lng: srcCoords[1] },
-      { lat: destCoords[0], lng: destCoords[1] },
-    );
-    setMapProps({ source: srcCoords, destination: destCoords, routeCoords });
-  }
-};
-
-const executeDriverAction = async (actionFn, successMsg, callback) => {
-  try {
-    const result = await actionFn();
-    if (result.success) {
-      Modal.success({ title: "Success", content: successMsg });
-      callback();
-    } else {
-      Modal.error({
-        title: "Failed",
-        content: result.message || "Operation failed.",
-      });
-    }
-  } catch (err) {
-    console.error(err);
-    Modal.error({ title: "Error", content: "Failed to perform operation." });
-  }
-};
-
-// --- Main component ---
+const EMPTY_MAP_PROPS = { source: null, destination: null, routeCoords: null };
 
 export default function DriverDashboard() {
   const { user, refreshUser } = useAuth();
@@ -547,11 +25,11 @@ export default function DriverDashboard() {
   const [loadingRides, setLoadingRides] = useState(false);
   const [loadingRequests, setLoadingRequests] = useState(false);
 
-  const [mapProps, setMapProps] = useState({
-    source: null,
-    destination: null,
-    routeCoords: null,
-  });
+  // Kept separate from the "Offer a Ride" preview map so an existing posted
+  // trip's route never bleeds into the publish form's map before the driver
+  // has picked their own origin/destination there.
+  const [postedTripMapProps, setPostedTripMapProps] = useState(EMPTY_MAP_PROPS);
+  const [publishMapProps, setPublishMapProps] = useState(EMPTY_MAP_PROPS);
 
   const fetchDriverRides = async () => {
     if (!user?.data?.id) return;
@@ -569,7 +47,7 @@ export default function DriverDashboard() {
         await updateMapRoute(
           activeRide.source,
           activeRide.destination,
-          setMapProps,
+          setPostedTripMapProps,
         );
       }
     } catch (err) {
@@ -664,7 +142,7 @@ export default function DriverDashboard() {
 
   const selectActiveRide = async (ride) => {
     setSelectedRide(ride);
-    await updateMapRoute(ride.source, ride.destination, setMapProps);
+    await updateMapRoute(ride.source, ride.destination, setPostedTripMapProps);
   };
 
   const pendingRequests = rideRequests.filter((r) => r.status === "PENDING");
@@ -688,14 +166,15 @@ export default function DriverDashboard() {
               </span>
             ),
             children: (
-              <PublishTabContent
+              <OfferARide
                 onPublishSuccess={async (newRide) => {
                   await fetchDriverRides();
                   if (newRide?.id) setSelectedRide(newRide);
                   setActiveTab("posted");
+                  setPublishMapProps(EMPTY_MAP_PROPS);
                 }}
-                onMapUpdate={setMapProps}
-                mapProps={mapProps}
+                onMapUpdate={setPublishMapProps}
+                mapProps={publishMapProps}
               />
             ),
           },
@@ -707,12 +186,12 @@ export default function DriverDashboard() {
               </span>
             ),
             children: (
-              <PostedTripsTabContent
+              <PostedTrips
                 postedRides={postedRides}
                 loadingRides={loadingRides}
                 selectedRide={selectedRide}
                 selectActiveRide={selectActiveRide}
-                mapProps={mapProps}
+                mapProps={postedTripMapProps}
                 handleStartTrip={handleStartTrip}
                 handleCompleteTrip={handleCompleteTrip}
                 onNavigateToRide={(rideId) => navigate(`/rides/${rideId}`)}
@@ -735,7 +214,7 @@ export default function DriverDashboard() {
               </Badge>
             ),
             children: (
-              <RequestQueueTabContent
+              <Bookings
                 postedRides={postedRides}
                 selectedRide={selectedRide}
                 selectActiveRide={selectActiveRide}
