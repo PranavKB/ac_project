@@ -10,6 +10,7 @@ import {
   LogoutOutlined,
   StarFilled,
   CarFilled,
+  ScheduleOutlined,
 } from "@ant-design/icons";
 
 const { Header } = Layout;
@@ -81,6 +82,16 @@ export default function Navbar() {
       label: "My Profile",
       onClick: () => navigate("/profile"),
     },
+    ...(isPassenger
+      ? [
+          {
+            key: "my-bookings",
+            icon: <ScheduleOutlined />,
+            label: "My Bookings",
+            onClick: () => navigate("/passenger/bookings"),
+          },
+        ]
+      : []),
     {
       key: "switch-role",
       icon: isPassenger ? <PlusOutlined /> : <SearchOutlined />,

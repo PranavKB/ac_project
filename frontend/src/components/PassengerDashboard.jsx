@@ -23,6 +23,7 @@ import {
   SafetyOutlined,
   AlertOutlined,
   CloseCircleOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
@@ -419,6 +420,7 @@ function MyBookingsCard({
   user,
   handleCancelBooking,
   onNavigateToRide,
+  onBackToSearch,
 }) {
   return (
     <div style={{ maxWidth: "800px", margin: "0 auto" }}>
@@ -427,6 +429,15 @@ function MyBookingsCard({
           <Title level={3} style={{ margin: 0, color: "#054752" }}>
             My Bookings
           </Title>
+        }
+        extra={
+          <Button
+            icon={<SearchOutlined />}
+            shape="round"
+            onClick={onBackToSearch}
+          >
+            Back to Search
+          </Button>
         }
         style={{
           borderRadius: "16px",
@@ -770,6 +781,7 @@ export default function PassengerDashboard({ defaultView = "all" }) {
           user={user}
           handleCancelBooking={handleCancelBooking}
           onNavigateToRide={(rideId) => navigate(`/rides/${rideId}`)}
+          onBackToSearch={() => navigate("/passenger/search")}
         />
       )}
 
