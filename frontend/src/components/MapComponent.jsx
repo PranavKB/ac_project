@@ -67,6 +67,9 @@ function ChangeView({ center, zoom, bounds }) {
   return null;
 }
 
+// source, destination, currentLocation, and each waypoint's `coords` are Leaflet
+// LatLngExpressions: [latitude, longitude]. Backend LocationPoint/Ride.currentLocation
+// values are GeoJSON [longitude, latitude] and must be flipped before being passed in here
 export default function MapComponent({
   source,
   destination,
