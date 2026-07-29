@@ -51,7 +51,16 @@ const fetchPassengerBookings = async (userId) => {
         try {
           if (booking.rideId) {
             const ride = await rideAPI.get(booking.rideId);
-            return { ...booking, rideStatus: ride?.status || "UNKNOWN" };
+            const rData = ride?.data || ride;
+            return {
+              ...booking,
+              rideStatus: rData?.status || "UNKNOWN",
+              pricePerSeat:
+                rData?.pricePerSeat != null
+                  ? rData.pricePerSeat
+                  : booking.pricePerSeat,
+              ride: rData,
+            };
           }
         } catch (err) {
           console.error("Failed to enrich booking:", booking.id, err);
@@ -651,6 +660,8 @@ export default function PassengerDashboard({ defaultView = "all" }) {
     if (!source || !destination || !user?.data?.id) return;
     setBookingInProgressId(match.ride.id);
 
+    const passengerCount = parseInt(savedSearch?.passengers || "1", 10) || 1;
+
     try {
       const reqData = {
         rideId: match.ride.id,
@@ -659,6 +670,7 @@ export default function PassengerDashboard({ defaultView = "all" }) {
         source: buildLocationPoint(source),
         destination: buildLocationPoint(destination),
         passengerH3Segments: [],
+        requestedSeats: passengerCount,
       };
 
       await requestAPI.create(reqData);

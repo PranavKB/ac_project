@@ -45,6 +45,7 @@ public class RideRequestService {
         request.setStatus("PENDING");
         request.setCreatedAt(Instant.now());
         request.setPriorityScore(0.0);
+        request.setRequestedSeats(dto.getRequestedSeats() > 0 ? dto.getRequestedSeats() : 1);
 
         RideRequest saved = rideRequestRepository.save(request);
 
@@ -104,11 +105,12 @@ public class RideRequestService {
         Ride ride = rideRepository.findById(request.getRideId())
                 .orElseThrow(() -> new RuntimeException("Ride not found with ID: " + request.getRideId()));
 
-        if (ride.getAvailableSeats() <= 0) {
-            throw new RuntimeException("No seats available for this ride");
+        int seatsToDeduct = request.getRequestedSeats() > 0 ? request.getRequestedSeats() : 1;
+        if (ride.getAvailableSeats() < seatsToDeduct) {
+            throw new RuntimeException("Not enough seats available for this ride request");
         }
 
-        ride.setAvailableSeats(ride.getAvailableSeats() - 1);
+        ride.setAvailableSeats(ride.getAvailableSeats() - seatsToDeduct);
         if (!ride.getPassengerIds().contains(request.getPassengerId())) {
             ride.getPassengerIds().add(request.getPassengerId());
         }
@@ -121,7 +123,8 @@ public class RideRequestService {
             return null;
         }
 
-        ride.setAvailableSeats(Math.min(ride.getTotalSeats(), ride.getAvailableSeats() + 1));
+        int seatsToRelease = request.getRequestedSeats() > 0 ? request.getRequestedSeats() : 1;
+        ride.setAvailableSeats(Math.min(ride.getTotalSeats(), ride.getAvailableSeats() + seatsToRelease));
         ride.getPassengerIds().remove(request.getPassengerId());
         return rideRepository.save(ride);
     }

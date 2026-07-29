@@ -34,5 +34,7 @@ public class RideRequest {
     // Priority Score = RouteSimilarity + ReputationScore - PickupDistanceKm
     private double priorityScore = 0.0;
 
+    private int requestedSeats = 1;
+
     private Instant createdAt = Instant.now();
 }

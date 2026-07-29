@@ -14,6 +14,8 @@ public class RideSearchRequest {
     private List<Double> destinationCoords;
 
     private String departureDate;
+
+    private Integer requestedSeats = 1;
 }
 
 

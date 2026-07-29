@@ -140,13 +140,16 @@ export default function GridDetailsLayout({
             driverName={driverName}
             priceAmount={priceAmount}
             isDriver={isDriver}
-            rideStatus={ride.status}
+            rideStatus={ride?.status}
             handleStartTrip={handleStartTrip}
             handleCompleteTrip={handleCompleteTrip}
             isBooked={isBooked}
             bookingStatus={bookingStatus}
             handleBookRide={handleBookRide}
             bookingInProgress={bookingInProgress}
+            totalSeats={ride?.totalSeats}
+            availableSeats={ride?.availableSeats}
+            passengerCount={passengers ? passengers.length : 1}
           />
         </div>
       </Col>
