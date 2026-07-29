@@ -95,19 +95,35 @@ function PassengerActions({
   rideStatus,
   handleBookRide,
   bookingInProgress,
+  availableSeats,
+  requestedSeatCount,
 }) {
   if (!isBooked) {
+    const notEnoughSeats =
+      availableSeats != null &&
+      requestedSeatCount != null &&
+      availableSeats < requestedSeatCount;
+
     return (
-      <Button
-        type="primary"
-        block
-        size="large"
-        onClick={handleBookRide}
-        loading={bookingInProgress}
-        style={{ height: "48px", fontWeight: 700, borderRadius: "12px" }}
-      >
-        Book Ride
-      </Button>
+      <>
+        <Button
+          type="primary"
+          block
+          size="large"
+          onClick={handleBookRide}
+          loading={bookingInProgress}
+          disabled={notEnoughSeats}
+          style={{ height: "48px", fontWeight: 700, borderRadius: "12px" }}
+        >
+          Book Ride
+        </Button>
+        {notEnoughSeats && (
+          <Text type="danger" style={{ fontSize: "0.85rem" }}>
+            Only {availableSeats} seat{availableSeats !== 1 ? "s" : ""} left —
+            you need {requestedSeatCount}.
+          </Text>
+        )}
+      </>
     );
   }
 
@@ -140,6 +156,7 @@ export default function SidebarDetailCard({
   passengerCount,
   totalSeats,
   availableSeats,
+  requestedSeatCount,
 }) {
   const filledSeats =
     totalSeats != null && availableSeats != null
@@ -244,6 +261,8 @@ export default function SidebarDetailCard({
             rideStatus={rideStatus}
             handleBookRide={handleBookRide}
             bookingInProgress={bookingInProgress}
+            availableSeats={availableSeats}
+            requestedSeatCount={requestedSeatCount}
           />
         )}
       </Space>

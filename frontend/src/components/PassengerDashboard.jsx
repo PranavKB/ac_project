@@ -368,6 +368,7 @@ function SearchResultsCard({
   bookings,
   bookingInProgressId,
   handleBookRide,
+  passengerCount,
 }) {
   return (
     <Card
@@ -407,6 +408,7 @@ function SearchResultsCard({
                 bookingInProgress={bookingInProgressId === match.ride.id}
                 myBookingStatus={myBookingStatus}
                 onBook={handleBookRide}
+                passengerCount={passengerCount}
               />
             );
           })}
@@ -609,6 +611,7 @@ export default function PassengerDashboard({ defaultView = "all" }) {
   const navigate = useNavigate();
 
   const savedSearch = readSessionSearch();
+  const passengerCount = parseInt(savedSearch?.passengers || "1", 10) || 1;
 
   const [searchDetails, setSearchDetails] = useState(
     () => savedSearch?.searchDetails || { source: null, destination: null },
@@ -659,8 +662,6 @@ export default function PassengerDashboard({ defaultView = "all" }) {
     const { source, destination } = searchDetails;
     if (!source || !destination || !user?.data?.id) return;
     setBookingInProgressId(match.ride.id);
-
-    const passengerCount = parseInt(savedSearch?.passengers || "1", 10) || 1;
 
     try {
       const reqData = {
@@ -779,6 +780,7 @@ export default function PassengerDashboard({ defaultView = "all" }) {
               bookings={bookings}
               bookingInProgressId={bookingInProgressId}
               handleBookRide={handleBookRide}
+              passengerCount={passengerCount}
             />
           </Col>
         </Row>

@@ -34,7 +34,8 @@ public class RideMatchingService {
      * direction.
      */
     public List<Map<String, Object>> findMatchingRides(double pSrcLat, double pSrcLng, double pDestLat, double pDestLng,
-            List<String> passengerH3, String departureDate) {
+            List<String> passengerH3, String departureDate, Integer requestedSeats) {
+        int minSeats = (requestedSeats != null && requestedSeats > 0) ? requestedSeats : 1;
         List<Ride> candidateRides;
         List<String> allowedStatuses = List.of("ACTIVE", "ONGOING");
 
@@ -56,7 +57,7 @@ public class RideMatchingService {
         List<Map<String, Object>> matches = new ArrayList<>();
 
         for (Ride ride : candidateRides) {
-            if (ride.getAvailableSeats() <= 0)
+            if (ride.getAvailableSeats() < minSeats)
                 continue;
 
             // Enforce direction and route proximity

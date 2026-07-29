@@ -1,5 +1,6 @@
 import { Modal } from "antd";
 import { rideAPI, requestAPI, userAPI } from "../../api";
+import { getRequestedSeatCount } from "./rideDetailsHelpers";
 
 export const fetchRideDetailsData = async (
   id,
@@ -56,18 +57,7 @@ export const requestRideBooking = async (
   }
   setBookingInProgress(true);
   try {
-    let passengerCount = 1;
-    try {
-      const savedSearch = sessionStorage.getItem("carpool_last_search");
-      if (savedSearch) {
-        const parsed = JSON.parse(savedSearch);
-        if (parsed?.passengers) {
-          passengerCount = parseInt(parsed.passengers, 10) || 1;
-        }
-      }
-    } catch (err) {
-      console.error("Failed to read passenger count from session:", err);
-    }
+    const passengerCount = getRequestedSeatCount();
 
     const reqData = {
       rideId: ride.id,

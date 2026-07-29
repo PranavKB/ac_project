@@ -4,6 +4,7 @@ import { rideAPI, messageAPI } from "../../api";
 import {
   parseRideTimesAndLocations,
   parseDriverProfile,
+  getRequestedSeatCount,
 } from "../utils/rideDetailsHelpers";
 import {
   fetchRideDetailsData,
@@ -139,6 +140,7 @@ export default function RideDetails() {
 
   const { driverRating, driverVehicle, driverSmokingPreference } =
     parseDriverProfile(driverProfile);
+  const requestedSeatCount = getRequestedSeatCount();
 
   const {
     srcName,
@@ -217,6 +219,7 @@ export default function RideDetails() {
         driverRating={driverRating}
         driverVehicle={driverVehicle}
         driverSmokingPreference={driverSmokingPreference}
+        requestedSeatCount={requestedSeatCount}
         passengers={passengers}
         ride={ride}
         messages={messages}

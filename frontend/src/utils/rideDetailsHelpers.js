@@ -88,6 +88,24 @@ export const parseRideTimesAndLocations = (ride, passengerCount = 1) => {
   };
 };
 
+// Reads the party size chosen on the search form (SearchRide.jsx) from the last
+// saved search session, so the ride-details "Book Ride" flow books the same
+// number of seats the passenger searched for.
+export const getRequestedSeatCount = () => {
+  try {
+    const savedSearch = sessionStorage.getItem("carpool_last_search");
+    if (savedSearch) {
+      const parsed = JSON.parse(savedSearch);
+      if (parsed?.passengers) {
+        return parseInt(parsed.passengers, 10) || 1;
+      }
+    }
+  } catch (err) {
+    console.error("Failed to read passenger count from session:", err);
+  }
+  return 1;
+};
+
 // Reputation scores are stored on a 0-100 scale; convert to a familiar 0-5 star rating.
 export const parseDriverProfile = (driverProfile) => {
   const reputation = driverProfile?.reputationProfile;

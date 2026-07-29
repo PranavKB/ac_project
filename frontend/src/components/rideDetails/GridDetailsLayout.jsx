@@ -19,6 +19,7 @@ export default function GridDetailsLayout({
   driverRating,
   driverVehicle,
   driverSmokingPreference,
+  requestedSeatCount,
   passengers,
   ride,
   messages,
@@ -150,6 +151,7 @@ export default function GridDetailsLayout({
             totalSeats={ride?.totalSeats}
             availableSeats={ride?.availableSeats}
             passengerCount={passengers ? passengers.length : 1}
+            requestedSeatCount={requestedSeatCount}
           />
         </div>
       </Col>

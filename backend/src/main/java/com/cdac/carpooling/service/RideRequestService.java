@@ -33,6 +33,13 @@ public class RideRequestService {
             throw new RuntimeException("You already have an active booking request for this ride.");
         }
 
+        int requestedSeats = dto.getRequestedSeats() > 0 ? dto.getRequestedSeats() : 1;
+        Ride ride = rideRepository.findById(dto.getRideId())
+                .orElseThrow(() -> new RuntimeException("Ride not found with ID: " + dto.getRideId()));
+        if (requestedSeats > ride.getAvailableSeats()) {
+            throw new RuntimeException("Only " + ride.getAvailableSeats() + " seat(s) left on this ride.");
+        }
+
         RideRequest request = new RideRequest();
 
         request.setRideId(dto.getRideId());
@@ -45,18 +52,17 @@ public class RideRequestService {
         request.setStatus("PENDING");
         request.setCreatedAt(Instant.now());
         request.setPriorityScore(0.0);
-        request.setRequestedSeats(dto.getRequestedSeats() > 0 ? dto.getRequestedSeats() : 1);
+        request.setRequestedSeats(requestedSeats);
 
         RideRequest saved = rideRequestRepository.save(request);
 
-        rideRepository.findById(dto.getRideId()).ifPresent(ride ->
-                notificationService.create(
-                        ride.getDriverId(),
-                        Notification.Type.BOOKING_REQUESTED,
-                        "New ride request",
-                        (dto.getPassengerName() != null ? dto.getPassengerName() : "A passenger")
-                                + " requested to join your ride.",
-                        dto.getRideId()));
+        notificationService.create(
+                ride.getDriverId(),
+                Notification.Type.BOOKING_REQUESTED,
+                "New ride request",
+                (dto.getPassengerName() != null ? dto.getPassengerName() : "A passenger")
+                        + " requested to join your ride.",
+                dto.getRideId());
 
         return saved;
     }

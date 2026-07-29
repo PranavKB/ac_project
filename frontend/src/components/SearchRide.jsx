@@ -66,6 +66,7 @@ function RenderBookingAction({
   match,
   bookingInProgress,
   seatsLeft,
+  passengerCount = 1,
 }) {
   if (myBookingStatus === "PENDING") {
     return (
@@ -114,19 +115,26 @@ function RenderBookingAction({
   }
   if (!onBook) return null;
 
+  const notEnoughSeats = seatsLeft < passengerCount;
+
   return (
     <Button
       type="primary"
       shape="round"
       size="small"
-      disabled={bookingInProgress || seatsLeft <= 0}
+      disabled={bookingInProgress || seatsLeft <= 0 || notEnoughSeats}
       onClick={(e) => {
         e.stopPropagation();
         onBook(match);
       }}
       style={{ fontWeight: 600 }}
+      title={notEnoughSeats ? `Only ${seatsLeft} seat(s) left` : undefined}
     >
-      {bookingInProgress ? "Booking..." : "Book"}
+      {bookingInProgress
+        ? "Booking..."
+        : notEnoughSeats
+          ? "Not enough seats"
+          : "Book"}
     </Button>
   );
 }
@@ -137,6 +145,7 @@ export function RideMatchCard({
   onBook,
   bookingInProgress,
   myBookingStatus,
+  passengerCount = 1,
 }) {
   const navigate = useNavigate();
   const { ride } = match;
@@ -335,6 +344,7 @@ export function RideMatchCard({
             match={match}
             bookingInProgress={bookingInProgress}
             seatsLeft={seatsLeft}
+            passengerCount={passengerCount}
           />
         </Space>
       </div>
@@ -416,6 +426,7 @@ export function SearchForm({
           parseFloat(destination.lng),
         ],
         departureDate: date ? date.format("YYYY-MM-DD") : null,
+        requestedSeats: parseInt(passengers, 10) || 1,
       };
 
       const response = await rideAPI.search(requestPayload);
