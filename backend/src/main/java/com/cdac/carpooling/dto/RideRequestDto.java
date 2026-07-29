@@ -12,4 +12,5 @@ public class RideRequestDto {
     private LocationPoint source;
     private LocationPoint destination;
     private List<String> passengerH3Segments;
+    private int requestedSeats = 1;
 }

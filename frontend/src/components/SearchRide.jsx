@@ -9,7 +9,6 @@ import {
   CalendarOutlined,
   UserOutlined,
   StarFilled,
-  ThunderboltFilled,
   CompassOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
@@ -330,21 +329,6 @@ export function RideMatchCard({
               boxShadow: "none",
             }}
           />
-          <Badge
-            count={
-              <Space size={2} style={{ color: "#52c41a" }}>
-                <ThunderboltFilled style={{ fontSize: "0.75rem" }} />
-                Instant Booking
-              </Space>
-            }
-            style={{
-              backgroundColor: "#f6ffed",
-              border: "1px solid #b7eb8f",
-              padding: "0 8px",
-              boxShadow: "none",
-            }}
-          />
-
           <RenderBookingAction
             myBookingStatus={myBookingStatus}
             onBook={onBook}

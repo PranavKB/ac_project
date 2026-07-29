@@ -126,10 +126,11 @@ public class RideController {
             double pDestLng = dst.get(1);
 
             String departureDate = request.getDepartureDate();
+            Integer requestedSeats = request.getRequestedSeats() != null ? request.getRequestedSeats() : 1;
             List<List<Double>> routeCoords = routingService.getRouteCoordinates(pSrcLat, pSrcLng, pDestLat, pDestLng);
             List<String> passengerH3 = h3Service.pathToH3Segments(routeCoords);
             List<Map<String, Object>> matches = rideMatchingService.findMatchingRides(pSrcLat, pSrcLng, pDestLat,
-                    pDestLng, passengerH3, departureDate);
+                    pDestLng, passengerH3, departureDate, requestedSeats);
             return ApiResponse.success(matches, "Matching rides fetched successfully");
         } catch (Exception e) {
             return ApiResponse.error("Something went wrong on the server: " + e.getMessage());

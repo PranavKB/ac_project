@@ -137,7 +137,21 @@ export default function SidebarDetailCard({
   bookingStatus,
   handleBookRide,
   bookingInProgress,
+  passengerCount,
+  totalSeats,
+  availableSeats,
 }) {
+  const filledSeats =
+    totalSeats != null && availableSeats != null
+      ? totalSeats - availableSeats
+      : passengerCount || 1;
+
+  const displaySeatsLabel = isDriver
+    ? `${filledSeats}/${totalSeats || 4} seats booked`
+    : `${filledSeats > 0 ? filledSeats : passengerCount || 1} passenger${
+        (filledSeats > 0 ? filledSeats : passengerCount || 1) !== 1 ? "s" : ""
+      }`;
+
   return (
     <Card
       title={
@@ -206,7 +220,7 @@ export default function SidebarDetailCard({
         }}
       >
         <Text style={{ fontSize: "0.95rem", fontWeight: 600 }}>
-          1 passenger
+          {displaySeatsLabel}
         </Text>
         <Title
           level={3}
