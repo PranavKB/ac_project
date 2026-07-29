@@ -3,17 +3,14 @@ import { routeAPI } from "../../api";
 
 export const updateMapRoute = async (source, destination, setMapProps) => {
   if (source && destination) {
-    const srcCoords = [
-      source.location.coordinates[0],
-      source.location.coordinates[1],
-    ];
-    const destCoords = [
-      destination.location.coordinates[0],
-      destination.location.coordinates[1],
-    ];
+    // GeoJSON order is [longitude, latitude]; Leaflet (MapComponent) needs [latitude, longitude]
+    const [srcLng, srcLat] = source.location.coordinates;
+    const [destLng, destLat] = destination.location.coordinates;
+    const srcCoords = [srcLat, srcLng];
+    const destCoords = [destLat, destLng];
     const routeCoords = await routeAPI.fetch(
-      { lat: srcCoords[0], lng: srcCoords[1] },
-      { lat: destCoords[0], lng: destCoords[1] },
+      { lat: srcLat, lng: srcLng },
+      { lat: destLat, lng: destLng },
     );
     setMapProps({ source: srcCoords, destination: destCoords, routeCoords });
   }
