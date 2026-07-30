@@ -21,7 +21,9 @@ import com.cdac.carpooling.dto.RideSearchRequest;
 import com.cdac.carpooling.model.LocationPoint;
 import com.cdac.carpooling.model.Notification;
 import com.cdac.carpooling.model.Ride;
+import com.cdac.carpooling.model.User;
 import com.cdac.carpooling.repository.RideRepository;
+import com.cdac.carpooling.repository.UserRepository;
 import com.cdac.carpooling.service.CarbonService;
 import com.cdac.carpooling.service.H3Service;
 import com.cdac.carpooling.service.NotificationService;
@@ -30,6 +32,9 @@ import com.cdac.carpooling.service.RoutingService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @RestController
 @RequestMapping("/api/rides")
@@ -41,6 +46,7 @@ public class RideController {
     private final CarbonService carbonService;
     private final RoutingService routingService;
     private final NotificationService notificationService;
+    private final UserRepository userRepository;
 
     @PostMapping
     public ResponseEntity<ApiResponse<Object>> createRide(@Valid @RequestBody RideCreationRequest request) {
@@ -129,8 +135,17 @@ public class RideController {
             Integer requestedSeats = request.getRequestedSeats() != null ? request.getRequestedSeats() : 1;
             List<List<Double>> routeCoords = routingService.getRouteCoordinates(pSrcLat, pSrcLng, pDestLat, pDestLng);
             List<String> passengerH3 = h3Service.pathToH3Segments(routeCoords);
+
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String excludeDriverId = null;
+            if (authentication != null && authentication.getName() != null) {
+                excludeDriverId = userRepository.findByEmail(authentication.getName())
+                        .map(User::getId)
+                        .orElse(null);
+            }
+
             List<Map<String, Object>> matches = rideMatchingService.findMatchingRides(pSrcLat, pSrcLng, pDestLat,
-                    pDestLng, passengerH3, departureDate, requestedSeats);
+                    pDestLng, passengerH3, departureDate, requestedSeats, excludeDriverId);
             return ApiResponse.success(matches, "Matching rides fetched successfully");
         } catch (Exception e) {
             return ApiResponse.error("Something went wrong on the server: " + e.getMessage());
