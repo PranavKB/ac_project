@@ -140,6 +140,7 @@ export default function GridDetailsLayout({
             driverInitial={driverInitial}
             driverName={driverName}
             priceAmount={priceAmount}
+            pricePerSeat={ride?.pricePerSeat}
             isDriver={isDriver}
             rideStatus={ride?.status}
             handleStartTrip={handleStartTrip}

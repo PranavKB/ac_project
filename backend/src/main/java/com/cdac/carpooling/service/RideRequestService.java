@@ -23,14 +23,19 @@ public class RideRequestService {
     private final RideMatchingService rideMatchingService;
 
     public RideRequest createRequest(RideRequestDto dto) {
-        List<RideRequest> existing = rideRequestRepository.findByPassengerId(dto.getPassengerId());
+        List<RideRequest> existing = rideRequestRepository.findByRideIdAndPassengerId(dto.getRideId(), dto.getPassengerId());
         boolean hasDuplicate = existing.stream().anyMatch(r ->
-            dto.getRideId().equals(r.getRideId()) &&
-            ("PENDING".equals(r.getStatus()) || "APPROVED".equals(r.getStatus()) || "ACCEPTED".equals(r.getStatus()))
+            "PENDING".equals(r.getStatus()) || "APPROVED".equals(r.getStatus()) || "ACCEPTED".equals(r.getStatus())
         );
 
         if (hasDuplicate) {
             throw new RuntimeException("You already have an active booking request for this ride.");
+        }
+
+        for (RideRequest oldReq : existing) {
+            if ("CANCELLED".equals(oldReq.getStatus()) || "REJECTED".equals(oldReq.getStatus())) {
+                rideRequestRepository.delete(oldReq);
+            }
         }
 
         int requestedSeats = dto.getRequestedSeats() > 0 ? dto.getRequestedSeats() : 1;

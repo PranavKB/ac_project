@@ -145,6 +145,7 @@ export default function SidebarDetailCard({
   driverInitial,
   driverName,
   priceAmount,
+  pricePerSeat,
   isDriver,
   rideStatus,
   handleStartTrip,
@@ -156,7 +157,7 @@ export default function SidebarDetailCard({
   passengerCount,
   totalSeats,
   availableSeats,
-  requestedSeatCount,
+  requestedSeatCount = 1,
 }) {
   const filledSeats =
     totalSeats != null && availableSeats != null
@@ -168,6 +169,23 @@ export default function SidebarDetailCard({
     : `${filledSeats > 0 ? filledSeats : passengerCount || 1} passenger${
         (filledSeats > 0 ? filledSeats : passengerCount || 1) !== 1 ? "s" : ""
       }`;
+
+  const currentSeatCount = isDriver
+    ? filledSeats > 0
+      ? filledSeats
+      : 1
+    : requestedSeatCount > 0
+      ? requestedSeatCount
+      : 1;
+
+  const rawPerSeat =
+    pricePerSeat != null
+      ? pricePerSeat
+      : parseFloat(String(priceAmount || "").replace(/[^0-9.]/g, "")) || 0;
+  const totalPrice = rawPerSeat * currentSeatCount;
+
+  const formattedPerSeat = `₹${rawPerSeat.toLocaleString("en-IN")}.00`;
+  const formattedTotal = `₹${totalPrice.toLocaleString("en-IN")}.00`;
 
   return (
     <Card
@@ -230,21 +248,64 @@ export default function SidebarDetailCard({
 
       <div
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
+          borderTop: "1px solid #f6f7f9",
+          paddingTop: "16px",
           marginBottom: "24px",
         }}
       >
-        <Text style={{ fontSize: "0.95rem", fontWeight: 600 }}>
-          {displaySeatsLabel}
-        </Text>
-        <Title
-          level={3}
-          style={{ margin: 0, color: "#054752", fontWeight: 800 }}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: currentSeatCount > 1 ? "10px" : 0,
+          }}
         >
-          {priceAmount}
-        </Title>
+          <div>
+            <Text
+              style={{ fontSize: "0.95rem", fontWeight: 600, display: "block" }}
+            >
+              {displaySeatsLabel}
+            </Text>
+            <Text type="secondary" style={{ fontSize: "0.82rem" }}>
+              Price per seat: {formattedPerSeat}
+            </Text>
+          </div>
+          <Title
+            level={3}
+            style={{ margin: 0, color: "#054752", fontWeight: 800 }}
+          >
+            {currentSeatCount > 1 ? formattedTotal : formattedPerSeat}
+          </Title>
+        </div>
+
+        {currentSeatCount > 1 && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              paddingTop: "8px",
+              marginTop: "8px",
+              borderTop: "1px dashed #eef0f2",
+            }}
+          >
+            <Text
+              type="secondary"
+              style={{ fontSize: "0.85rem", fontWeight: 500 }}
+            >
+              {isDriver
+                ? `Total Revenue (${currentSeatCount} booked seats)`
+                : `Total Price (${currentSeatCount} booked seats)`}
+            </Text>
+            <Text
+              strong
+              style={{ color: "#00aff5", fontSize: "1.05rem", fontWeight: 800 }}
+            >
+              {formattedTotal}
+            </Text>
+          </div>
+        )}
       </div>
 
       <Space orientation="vertical" style={{ width: "100%" }} size="middle">

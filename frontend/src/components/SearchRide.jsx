@@ -2,14 +2,15 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import LocationInput from "./LocationInput";
 import { rideAPI, routeAPI } from "../../api";
-import { Card, Button, DatePicker, Select, Space, Avatar, Badge } from "antd";
+import { Card, Button, DatePicker, Space, Avatar, Badge } from "antd";
 import {
   SwapOutlined,
   EnvironmentOutlined,
   CalendarOutlined,
   UserOutlined,
   StarFilled,
-  CompassOutlined,
+  MinusOutlined,
+  PlusOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { calculateRouteDistance } from "../utils/helpers";
@@ -352,12 +353,69 @@ export function RideMatchCard({
   );
 }
 
+function PassengerCounterField({ passengers, setPassengers }) {
+  const count = parseInt(passengers, 10) || 1;
+  return (
+    <div
+      className="combined-search-field"
+      style={{ minWidth: "185px", padding: "0 12px" }}
+    >
+      <Space
+        size="small"
+        style={{ width: "100%", justifyContent: "space-between" }}
+      >
+        <Space size="small">
+          <UserOutlined style={{ color: "#708c91", fontSize: "1.1rem" }} />
+          <span
+            style={{ fontWeight: 600, color: "#054752", fontSize: "0.95rem" }}
+          >
+            {count} {count === 1 ? "passenger" : "passengers"}
+          </span>
+        </Space>
+        <Space size={4}>
+          <Button
+            type="text"
+            shape="circle"
+            size="small"
+            icon={
+              <MinusOutlined
+                style={{
+                  fontSize: "11px",
+                  color: count <= 1 ? "#ccc" : "#00aff5",
+                }}
+              />
+            }
+            disabled={count <= 1}
+            onClick={() => setPassengers(String(Math.max(1, count - 1)))}
+            style={{ border: "1px solid #d9d9d9" }}
+          />
+          <Button
+            type="text"
+            shape="circle"
+            size="small"
+            icon={
+              <PlusOutlined
+                style={{
+                  fontSize: "11px",
+                  color: count >= 8 ? "#ccc" : "#00aff5",
+                }}
+              />
+            }
+            disabled={count >= 8}
+            onClick={() => setPassengers(String(Math.min(8, count + 1)))}
+            style={{ border: "1px solid #d9d9d9" }}
+          />
+        </Space>
+      </Space>
+    </div>
+  );
+}
+
 // --- Horizontal Combined Search Component
 export function SearchForm({
   onSearchStart,
   onSearchSuccess,
   onSearchError,
-  loading,
   horizontal = true,
 }) {
   const [searchDetails, setSearchDetails] = useState(() => {
@@ -367,38 +425,34 @@ export function SearchForm({
         return (
           JSON.parse(saved).searchDetails || { source: null, destination: null }
         );
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // fallback
     }
     return { source: null, destination: null };
   });
+
   const [date, setDate] = useState(() => {
     try {
       const saved = sessionStorage.getItem("carpool_last_search");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed?.date) return dayjs(parsed.date);
-      }
-    } catch (e) {
-      console.error(e);
+      if (saved && JSON.parse(saved).date) return dayjs(JSON.parse(saved).date);
+    } catch {
+      // fallback
     }
-    return dayjs("2026-07-25");
+    return dayjs();
   });
+
   const [passengers, setPassengers] = useState(() => {
     try {
       const saved = sessionStorage.getItem("carpool_last_search");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed?.passengers) return parsed.passengers;
-      }
-    } catch (e) {
-      console.error(e);
+      if (saved && JSON.parse(saved).passengers)
+        return JSON.parse(saved).passengers;
+    } catch {
+      // fallback
     }
     return "1";
   });
-  const [localLoading, setLocalLoading] = useState(false);
 
-  const isLoading = loading !== undefined ? loading : localLoading;
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSwap = () => {
     setSearchDetails((prev) => ({
@@ -407,16 +461,16 @@ export function SearchForm({
     }));
   };
 
-  const handleSubmit = async (e) => {
-    if (e && e.preventDefault) e.preventDefault();
+  const handleSubmit = async () => {
     const { source, destination } = searchDetails;
     if (!source || !destination) {
-      alert("Please select both origin and destination locations!");
+      if (onSearchError)
+        onSearchError("Please select both source and destination.");
       return;
     }
 
+    setIsLoading(true);
     if (onSearchStart) onSearchStart();
-    setLocalLoading(true);
 
     try {
       const requestPayload = {
@@ -449,56 +503,45 @@ export function SearchForm({
         });
       }
     } catch (err) {
-      if (onSearchError) {
-        onSearchError(err.message || "Ride search failed.");
-      } else {
-        alert(err.message || "Ride search failed.");
-      }
+      if (onSearchError)
+        onSearchError(
+          err.response?.data?.message ||
+            "Failed to search rides. Please try again.",
+        );
     } finally {
-      setLocalLoading(false);
+      setIsLoading(false);
     }
   };
 
   if (!horizontal) {
     return (
-      <Card style={{ borderRadius: "16px", padding: "8px" }}>
-        <Space orientation="vertical" style={{ width: "100%" }} size="middle">
-          <div>
-            <div
-              style={{ fontWeight: 600, marginBottom: "6px", color: "#054752" }}
-            >
-              Origin
-            </div>
-            <LocationInput
-              value={searchDetails.source?.name || ""}
-              placeholder="Enter origin location..."
-              onSelect={(loc) =>
-                setSearchDetails((p) => ({ ...p, source: loc }))
-              }
-            />
-          </div>
-          <div>
-            <div
-              style={{ fontWeight: 600, marginBottom: "6px", color: "#054752" }}
-            >
-              Destination
-            </div>
-            <LocationInput
-              value={searchDetails.destination?.name || ""}
-              placeholder="Enter destination location..."
-              onSelect={(loc) =>
-                setSearchDetails((p) => ({ ...p, destination: loc }))
-              }
-            />
-          </div>
-          <Button
-            type="primary"
-            size="large"
-            block
-            loading={isLoading}
-            onClick={handleSubmit}
-            style={{ borderRadius: "12px", height: "48px", fontWeight: 700 }}
-          >
+      <Card style={{ borderRadius: "16px", padding: "20px" }}>
+        <Space orientation="vertical" size="middle" style={{ width: "100%" }}>
+          <LocationInput
+            placeholder="Leaving from..."
+            initialValue={searchDetails.source}
+            onSelect={(loc) =>
+              setSearchDetails((prev) => ({ ...prev, source: loc }))
+            }
+          />
+          <LocationInput
+            placeholder="Going to..."
+            initialValue={searchDetails.destination}
+            onSelect={(loc) =>
+              setSearchDetails((prev) => ({ ...prev, destination: loc }))
+            }
+          />
+          <DatePicker
+            value={date}
+            onChange={(val) => val && setDate(val)}
+            format="YYYY-MM-DD"
+            style={{ width: "100%" }}
+          />
+          <PassengerCounterField
+            passengers={passengers}
+            setPassengers={setPassengers}
+          />
+          <Button type="primary" block onClick={handleSubmit}>
             Search Rides
           </Button>
         </Space>
@@ -508,12 +551,14 @@ export function SearchForm({
 
   return (
     <div className="combined-search-bar">
-      {/* Leaving from */}
+      {/* Source */}
       <div className="combined-search-field">
         <LocationInput
           value={searchDetails.source?.name || ""}
           placeholder="Leaving from..."
-          onSelect={(loc) => setSearchDetails((p) => ({ ...p, source: loc }))}
+          onSelect={(loc) =>
+            setSearchDetails((prev) => ({ ...prev, source: loc }))
+          }
           prefix={
             <EnvironmentOutlined
               style={{ color: "#708c91", fontSize: "1.1rem" }}
@@ -522,31 +567,33 @@ export function SearchForm({
         />
       </div>
 
-      {/* Swap Button */}
+      {/* Swap */}
       <Button
         type="text"
         shape="circle"
-        icon={<SwapOutlined />}
+        icon={<SwapOutlined style={{ color: "#00aff5" }} />}
         onClick={handleSwap}
-        style={{ color: "#00aff5", margin: "0 4px" }}
+        style={{ margin: "0 -8px", zIndex: 2, backgroundColor: "#fff" }}
       />
 
-      {/* Going to */}
+      {/* Destination */}
       <div className="combined-search-field">
         <LocationInput
           value={searchDetails.destination?.name || ""}
           placeholder="Going to..."
           onSelect={(loc) =>
-            setSearchDetails((p) => ({ ...p, destination: loc }))
+            setSearchDetails((prev) => ({ ...prev, destination: loc }))
           }
           prefix={
-            <CompassOutlined style={{ color: "#708c91", fontSize: "1.1rem" }} />
+            <EnvironmentOutlined
+              style={{ color: "#00aff5", fontSize: "1.1rem" }}
+            />
           }
         />
       </div>
 
       {/* Date */}
-      <div className="combined-search-field" style={{ minWidth: "160px" }}>
+      <div className="combined-search-field">
         <Space size="small" style={{ width: "100%" }}>
           <CalendarOutlined style={{ color: "#708c91", fontSize: "1.1rem" }} />
           <DatePicker
@@ -560,24 +607,11 @@ export function SearchForm({
         </Space>
       </div>
 
-      {/* Passengers */}
-      <div className="combined-search-field" style={{ minWidth: "150px" }}>
-        <Space size="small" style={{ width: "100%" }}>
-          <UserOutlined style={{ color: "#708c91", fontSize: "1.1rem" }} />
-          <Select
-            value={passengers}
-            onChange={setPassengers}
-            variant="borderless"
-            style={{ width: "100%", fontWeight: 500, color: "#054752" }}
-            options={[
-              { value: "1", label: "1 passenger" },
-              { value: "2", label: "2 passengers" },
-              { value: "3", label: "3 passengers" },
-              { value: "4", label: "4 passengers" },
-            ]}
-          />
-        </Space>
-      </div>
+      {/* Passengers Counter */}
+      <PassengerCounterField
+        passengers={passengers}
+        setPassengers={setPassengers}
+      />
 
       {/* Submit Button */}
       <Button
@@ -587,10 +621,7 @@ export function SearchForm({
         style={{
           height: "48px",
           padding: "0 28px",
-          borderTopLeftRadius: "0",
-          borderBottomLeftRadius: "0",
-          borderTopRightRadius: "12px",
-          borderBottomRightRadius: "12px",
+          borderRadius: "0 12px 12px 0",
           fontWeight: 700,
           fontSize: "1rem",
         }}

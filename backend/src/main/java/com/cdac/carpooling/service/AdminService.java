@@ -55,8 +55,10 @@ public class AdminService {
         double averageUserRating = ratedUsers.isEmpty() ? 0.0
                 : ratedUsers.stream().mapToDouble(ru -> ru.overallScore).average().orElse(0.0);
 
+        long totalUsersCount = Math.max(0, userRepository.count() - 1);
+
         return AdminOverviewStatsDto.builder()
-                .totalUsers(userRepository.count())
+                .totalUsers(totalUsersCount)
                 .totalRides(rideRepository.count())
                 .activeRides(rideRepository.countByStatus("ACTIVE"))
                 .completedRides(completedRides.size())
@@ -69,7 +71,10 @@ public class AdminService {
     // ---------- Users ----------
 
     public List<AdminUserDto> getAllUsers() {
-        return userRepository.findAll().stream().map(this::toAdminUserDto).toList();
+        return userRepository.findAll().stream()
+                .filter(u -> u.getRoles() != null && (u.getRoles().contains("DRIVER") || u.getRoles().contains("PASSENGER")))
+                .map(this::toAdminUserDto)
+                .toList();
     }
 
     public void deleteUser(String id) {
