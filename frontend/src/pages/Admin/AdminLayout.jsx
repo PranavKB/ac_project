@@ -9,7 +9,6 @@ import {
   StarOutlined,
   FlagOutlined,
   BellOutlined,
-  SettingOutlined,
   LogoutOutlined,
   CarFilled,
   MenuFoldOutlined,
@@ -39,7 +38,7 @@ const MENU_ITEMS = [
     icon: <BellOutlined />,
     label: "Notifications",
   },
-  { key: "/admin/settings", icon: <SettingOutlined />, label: "Settings" },
+  // { key: "/admin/settings", icon: <SettingOutlined />, label: "Settings" },
 ];
 
 export default function AdminLayout() {
@@ -127,9 +126,7 @@ export default function AdminLayout() {
             onClick={() => setCollapsed(!collapsed)}
             style={{ fontSize: "1.1rem", color: "#054752" }}
           />
-          <span style={{ fontWeight: 700, color: "#054752" }}>
-            Community Carpooling — Admin
-          </span>
+          <span style={{ fontWeight: 700, color: "#054752" }}>Admin</span>
         </Header>
         <Content style={{ margin: "24px", minHeight: "calc(100vh - 112px)" }}>
           <Outlet />
