@@ -137,7 +137,7 @@ export default function Profile() {
   let completionItems = 0;
   if (name) completionItems += 25;
   if (bio) completionItems += 25;
-  // Email is always verified — logging in requires the registered email.
+  // Email is always verified - logging in requires the registered email.
   completionItems += 25;
   if (preferences && Object.keys(preferences).length > 0) completionItems += 25;
   const profileCompletion = completionItems;

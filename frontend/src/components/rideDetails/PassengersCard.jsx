@@ -11,6 +11,19 @@ export default function PassengersCard({
   hasRated,
   onRatePassenger,
 }) {
+  const activePassengersMap = new Map();
+  passengers.forEach((p) => {
+    const existing = activePassengersMap.get(p.passengerId);
+    if (
+      !existing ||
+      p.status === "APPROVED" ||
+      (p.status === "PENDING" && existing.status !== "APPROVED")
+    ) {
+      activePassengersMap.set(p.passengerId, p);
+    }
+  });
+  const displayPassengers = Array.from(activePassengersMap.values());
+
   return (
     <Card
       title={
@@ -27,9 +40,9 @@ export default function PassengersCard({
       }
       style={{ borderRadius: "16px", border: "1px solid #eef0f2" }}
     >
-      {passengers.length > 0 ? (
+      {displayPassengers.length > 0 ? (
         <div style={{ display: "flex", flexDirection: "column" }}>
-          {passengers.map((p, idx) => (
+          {displayPassengers.map((p, idx) => (
             <div
               key={p.id || idx}
               style={{

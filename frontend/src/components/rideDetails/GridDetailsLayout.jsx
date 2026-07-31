@@ -96,7 +96,7 @@ export default function GridDetailsLayout({
             title={
               <div style={{ color: "#054752" }}>
                 By choosing this trip, you will help avoid{" "}
-                <strong>≈{co2Kg > 0 ? co2Kg.toFixed(1) : "—"} kg of CO₂</strong>
+                <strong>≈{co2Kg > 0 ? co2Kg.toFixed(1) : "-"} kg of CO₂</strong>
                 {distanceKm > 0 && (
                   <span
                     style={{
@@ -140,6 +140,7 @@ export default function GridDetailsLayout({
             driverInitial={driverInitial}
             driverName={driverName}
             priceAmount={priceAmount}
+            pricePerSeat={ride?.pricePerSeat}
             isDriver={isDriver}
             rideStatus={ride?.status}
             handleStartTrip={handleStartTrip}

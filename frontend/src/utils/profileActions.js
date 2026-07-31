@@ -16,7 +16,7 @@ export const updateUserProfile = async (userId, updatePayload, options) => {
 
 // For drivers, trips are Ride documents and already carry their own status
 // and price. For passengers, trips are RideRequest documents, which don't
-// store the ride's current status or price — so each request is enriched
+// store the ride's current status or price - so each request is enriched
 // with its underlying ride's status/pricePerSeat here.
 export const fetchUserTrips = async (userId, isDriverMode) => {
   if (isDriverMode) {

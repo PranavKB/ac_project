@@ -104,6 +104,11 @@ export default function AdminUsers() {
 
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
+      const hasValidRole =
+        u.roles &&
+        (u.roles.includes("DRIVER") || u.roles.includes("PASSENGER"));
+      if (!hasValidRole) return false;
+
       const matchesSearch =
         !searchText ||
         u.name?.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -167,26 +172,31 @@ export default function AdminUsers() {
     {
       title: "Actions",
       key: "actions",
-      render: (_, record) => (
-        <Space>
-          <Tooltip title="View profile">
-            <Button
-              icon={<EyeOutlined />}
-              size="small"
-              onClick={() => setViewingUser(record)}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Delete this user?"
-            description="This action cannot be undone."
-            onConfirm={() => handleDelete(record.id)}
-          >
-            <Tooltip title="Delete user">
-              <Button icon={<DeleteOutlined />} size="small" danger />
+      render: (_, record) => {
+        const isAdminUser = record.roles && record.roles.includes("ADMIN");
+        return (
+          <Space>
+            <Tooltip title="View profile">
+              <Button
+                icon={<EyeOutlined />}
+                size="small"
+                onClick={() => setViewingUser(record)}
+              />
             </Tooltip>
-          </Popconfirm>
-        </Space>
-      ),
+            {!isAdminUser && (
+              <Popconfirm
+                title="Delete this user?"
+                description="This action cannot be undone."
+                onConfirm={() => handleDelete(record.id)}
+              >
+                <Tooltip title="Delete user">
+                  <Button icon={<DeleteOutlined />} size="small" danger />
+                </Tooltip>
+              </Popconfirm>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 

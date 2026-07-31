@@ -26,6 +26,16 @@ import { ArrowLeftOutlined } from "@ant-design/icons";
 
 const { Title } = Typography;
 
+function resolveMyBooking(passengers, userId) {
+  const userRequests = passengers.filter((p) => p.passengerId === userId);
+  if (userRequests.length === 0) return null;
+  const approved = userRequests.find((p) => p.status === "APPROVED");
+  if (approved) return approved;
+  const pending = userRequests.find((p) => p.status === "PENDING");
+  if (pending) return pending;
+  return userRequests[userRequests.length - 1];
+}
+
 export default function RideDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -94,7 +104,9 @@ export default function RideDetails() {
   const hasRated = (reviewedUserId) =>
     ratings.some(
       (r) =>
-        r.reviewerId === user?.data?.id && r.reviewedUserId === reviewedUserId,
+        r.rideId === ride?.id &&
+        r.reviewerId === user?.data?.id &&
+        r.reviewedUserId === reviewedUserId,
     );
 
   const handleSubmitRating = (values, form) =>
@@ -132,8 +144,8 @@ export default function RideDetails() {
     return <RideDetailsErrorView error={error} onGoBack={() => navigate(-1)} />;
 
   const isDriver = activeRole === "DRIVER" && user?.data?.id === ride.driverId;
-  const myBooking = passengers.find((p) => p.passengerId === user?.data?.id);
-  const isBooked = !!myBooking;
+  const myBooking = resolveMyBooking(passengers, user?.data?.id);
+  const isBooked = !!myBooking && myBooking.status !== "CANCELLED";
   const bookingStatus = myBooking?.status;
   const driverName = ride.driverName || "Driver";
   const driverInitial = driverName.charAt(0).toUpperCase();

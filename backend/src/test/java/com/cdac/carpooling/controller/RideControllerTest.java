@@ -187,6 +187,65 @@ class RideControllerTest {
      }
 
     @Test
+    @WithMockUser(username = "self-driver@example.com", roles = {"PASSENGER"})
+    void testSearchRides_excludesOwnRide() throws Exception {
+        User self = new User();
+        self.setEmail("self-driver@example.com");
+        self.setName("Self Driver");
+        self = userRepository.save(self);
+
+        List<Double> srcCoords = List.of(12.9716, 77.5946);
+        List<Double> dstCoords = List.of(12.9279, 77.6413);
+
+        List<List<Double>> routeCoords = routingService.getRouteCoordinates(srcCoords.get(0), srcCoords.get(1), dstCoords.get(0), dstCoords.get(1));
+        List<String> realCalculatedH3 = h3Service.pathToH3Segments(routeCoords);
+
+        Ride ownRide = new Ride();
+        ownRide.setDriverId(self.getId());
+        ownRide.setDriverName("Self Driver");
+        ownRide.setTotalSeats(3);
+        ownRide.setAvailableSeats(3);
+        ownRide.setStatus("ACTIVE");
+        ownRide.setDepartureTime(Instant.now().plusSeconds(3600));
+
+        ownRide.setH3RouteSegments(realCalculatedH3);
+
+        LocationPoint srcPoint = new LocationPoint();
+        srcPoint.setName("Alpha Office");
+        LocationPoint.GeoJsonPoint srcGeo = new LocationPoint.GeoJsonPoint();
+        srcGeo.setType("Point");
+        // GeoJSON order: [longitude, latitude]
+        srcGeo.setCoordinates(new double[] { srcCoords.get(1), srcCoords.get(0) });
+        srcPoint.setLocation(srcGeo);
+        ownRide.setSource(srcPoint);
+
+        LocationPoint dstPoint = new LocationPoint();
+        dstPoint.setName("Beta Tech Park");
+        LocationPoint.GeoJsonPoint dstGeo = new LocationPoint.GeoJsonPoint();
+        dstGeo.setType("Point");
+        // GeoJSON order: [longitude, latitude]
+        dstGeo.setCoordinates(new double[] { dstCoords.get(1), dstCoords.get(0) });
+        dstPoint.setLocation(dstGeo);
+        ownRide.setDestination(dstPoint);
+
+        rideRepository.save(ownRide);
+
+        String searchPayload = """
+                {
+                    "sourceCoords": [12.9716, 77.5946],
+                    "destinationCoords": [12.9279, 77.6413]
+                }
+                """;
+        mockMvc.perform(post("/api/rides/search")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(searchPayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data.length()").value(0));
+    }
+
+    @Test
     @WithMockUser(username = "driver1", roles = {"DRIVER"})
     void testCompleteRide_shouldPruneH3Segments() throws Exception {
         Ride ride = new Ride();
