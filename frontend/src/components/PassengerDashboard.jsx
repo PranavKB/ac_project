@@ -20,6 +20,7 @@ import {
 import {
   ClockCircleOutlined,
   TagOutlined,
+  StarOutlined,
   SafetyOutlined,
   AlertOutlined,
   CloseCircleOutlined,
@@ -99,7 +100,7 @@ const filterAndSortRides = (
   sortBy,
 ) => {
   const filtered = searchResults.filter((match) => {
-    if (verifiedFilter && !match.ride?.driverVerified) return false;
+    if (!verifiedFilter) return false;
     const depTimeStr = match.ride?.departureTime;
     if (!depTimeStr) return true;
     const hour = new Date(depTimeStr).getHours();
@@ -115,6 +116,8 @@ const filterAndSortRides = (
   return [...filtered].sort((a, b) => {
     if (sortBy === "price")
       return (a.ride?.pricePerSeat || 0) - (b.ride?.pricePerSeat || 0);
+    if (sortBy === "rating")
+      return (b.driverReputationAvg ?? 80) - (a.driverReputationAvg ?? 80);
     const timeA = new Date(a.ride?.departureTime || 0).getTime();
     const timeB = new Date(b.ride?.departureTime || 0).getTime();
     return timeA - timeB;
@@ -275,6 +278,18 @@ function FilterSidebarCard({
             >
               <Space>
                 <TagOutlined /> Lowest price
+              </Space>
+            </Radio>
+            <Radio
+              value="rating"
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                width: "100%",
+              }}
+            >
+              <Space>
+                <StarOutlined /> Highest rated driver
               </Space>
             </Radio>
           </Space>
@@ -634,7 +649,7 @@ export default function PassengerDashboard({ defaultView = "all" }) {
     morning: false,
     evening: false,
   });
-  const [verifiedFilter, setVerifiedFilter] = useState(false);
+  const [verifiedFilter, setVerifiedFilter] = useState(true);
 
   // Map state
   const [mapProps, setMapProps] = useState(
@@ -698,7 +713,7 @@ export default function PassengerDashboard({ defaultView = "all" }) {
   const clearFilters = () => {
     setSortBy("earliest");
     setDepartureFilter({ morning: false, evening: false });
-    setVerifiedFilter(false);
+    setVerifiedFilter(true);
   };
 
   const handleSearchStart = () => {
