@@ -70,9 +70,16 @@ public class RideMatchingService {
 
             double similarity = h3Service.calculateSimilarity(ride.getH3RouteSegments(), passengerH3);
             if (similarity >= SIMILARITY_THRESHOLD) {
+                double driverReputationAvg = userRepository.findById(ride.getDriverId())
+                        .map(User::getReputationProfile)
+                        .map(profile -> (profile.getTrustScore() + profile.getReliabilityScore()
+                                + profile.getComfortScore()) / 3.0)
+                        .orElse(DEFAULT_REPUTATION);
+
                 Map<String, Object> entry = new HashMap<>();
                 entry.put("ride", ride);
                 entry.put("similarityScore", Math.round(similarity * 100.0) / 100.0);
+                entry.put("driverReputationAvg", Math.round(driverReputationAvg * 10.0) / 10.0);
                 matches.add(entry);
             }
         }

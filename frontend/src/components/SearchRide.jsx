@@ -154,6 +154,7 @@ export function RideMatchCard({
   const driverInitial = driverName.charAt(0).toUpperCase();
   const seatsLeft = ride?.availableSeats ?? 2;
   const similarityScore = Math.round((match?.similarityScore || 0.85) * 100);
+  const driverRating = ((match?.driverReputationAvg ?? 80) / 20).toFixed(1);
 
   const { depTime, arrTime, durationText, priceAmount } =
     formatRideTimesAndDuration(ride);
@@ -296,7 +297,7 @@ export function RideMatchCard({
       >
         {/* Driver profile avatar and rating */}
         <Space size="middle">
-          <Badge dot status="processing" offset={[-2, 32]}>
+          <Badge status="processing" offset={[-2, 32]}>
             <Avatar
               style={{
                 backgroundColor: "#e6f7ff",
@@ -316,7 +317,7 @@ export function RideMatchCard({
             </div>
             <Space size={4} style={{ color: "#faad14", fontSize: "0.8rem" }}>
               <StarFilled />
-              <span style={{ fontWeight: 600 }}>4.8</span>
+              <span style={{ fontWeight: 600 }}>{driverRating}</span>
             </Space>
           </div>
         </Space>
