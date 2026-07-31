@@ -65,7 +65,7 @@ public class AuthService {
         user.setPhone(phone);
         user.setPassword(passwordEncoder.encode(password));
         user.setRoles(sanitizedRoles);
-        user.setReputationProfile(new User.ReputationProfile(80.0, 80.0, 80.0, "New user — no rides yet."));
+        user.setReputationProfile(new User.ReputationProfile(80.0, 80.0, 80.0, "New user - no rides yet."));
         user.setTotalCarbonSavedKg(0.0);
         user.setCreatedAt(Instant.now());
 

@@ -119,7 +119,7 @@ function PassengerActions({
         </Button>
         {notEnoughSeats && (
           <Text type="danger" style={{ fontSize: "0.85rem" }}>
-            Only {availableSeats} seat{availableSeats !== 1 ? "s" : ""} left —
+            Only {availableSeats} seat{availableSeats !== 1 ? "s" : ""} left -
             you need {requestedSeatCount}.
           </Text>
         )}

@@ -61,7 +61,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         } catch (Exception e) {
-            // Invalid or malformed token — return 401 cleanly without rethrowing
+            // Invalid or malformed token - return 401 cleanly without rethrowing
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired token");
             return;
         }

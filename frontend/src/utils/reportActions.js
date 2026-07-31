@@ -20,7 +20,7 @@ export const submitReport = async (
     });
     Modal.success({
       title: "Report submitted",
-      content: "Thank you — our team will review this ride.",
+      content: "Thank you - our team will review this ride.",
     });
     setReportTarget(null);
     form.resetFields();
