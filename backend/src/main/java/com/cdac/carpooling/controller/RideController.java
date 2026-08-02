@@ -32,6 +32,7 @@ import com.cdac.carpooling.repository.UserRepository;
 import com.cdac.carpooling.service.CarbonService;
 import com.cdac.carpooling.service.H3Service;
 import com.cdac.carpooling.service.NotificationService;
+import com.cdac.carpooling.service.RideLifecycleService;
 import com.cdac.carpooling.service.RideMatchingService;
 import com.cdac.carpooling.service.RoutingService;
 
@@ -48,15 +49,33 @@ public class RideController {
     private final H3Service h3Service;
     private final RideMatchingService rideMatchingService;
     private final RideRepository rideRepository;
-    private final CarbonService carbonService;
     private final RoutingService routingService;
     private final NotificationService notificationService;
     private final UserRepository userRepository;
+    private final RideLifecycleService rideLifecycleService;
 
     private static final int MAX_MULTI_DAY_RANGE = 30;
+    private static final List<String> ACTIVE_RIDE_STATUSES = List.of("ACTIVE", "ONGOING");
 
     @PostMapping
     public ResponseEntity<ApiResponse<Object>> createRide(@Valid @RequestBody RideCreationRequest request) {
+        Instant departureTime;
+        if (request.getDepartureTime() != null && !request.getDepartureTime().isBlank()) {
+            departureTime = Instant.parse(request.getDepartureTime());
+        } else {
+            // Default 1 hour from start time
+            departureTime = Instant.now().plusSeconds(3600);
+        }
+
+        if (departureTime.isBefore(Instant.now())) {
+            return ApiResponse.error("Departure time cannot be in the past", HttpStatus.BAD_REQUEST);
+        }
+        if (rideRepository.existsByDriverIdAndDepartureTimeAndStatusIn(request.getDriverId(), departureTime,
+                ACTIVE_RIDE_STATUSES)) {
+            return ApiResponse.error("You already have a ride scheduled at this exact date and time",
+                    HttpStatus.BAD_REQUEST);
+        }
+
         Ride ride = new Ride();
         ride.setDriverId(request.getDriverId());
         ride.setDriverName(request.getDriverName());
@@ -65,13 +84,7 @@ public class RideController {
         ride.setEstimatedDurationMinutes(request.getEstimatedDurationMinutes());
         ride.setPricePerSeat(request.getPricePerSeat());
         ride.setStatus("ACTIVE");
-
-        if (request.getDepartureTime() != null && !request.getDepartureTime().isBlank()) {
-            ride.setDepartureTime(Instant.parse(request.getDepartureTime()));
-        } else {
-            // Default 1 hour from start time
-            ride.setDepartureTime(Instant.now().plusSeconds(3600));
-        }
+        ride.setDepartureTime(departureTime);
 
         ride.setSource(parseLocationDto(request.getSource()));
         ride.setDestination(parseLocationDto(request.getDestination()));
@@ -133,6 +146,10 @@ public class RideController {
             }
         }
 
+        if (firstDeparture.isBefore(Instant.now())) {
+            return ApiResponse.error("Departure time cannot be in the past", HttpStatus.BAD_REQUEST);
+        }
+
         if (endDate.isBefore(startDate)) {
             return ApiResponse.error("To date must be on or after the departure date", HttpStatus.BAD_REQUEST);
         }
@@ -143,7 +160,18 @@ public class RideController {
                     HttpStatus.BAD_REQUEST);
         }
 
-        // Fetch the driving polyline & H3 segments once - the route is identical for every day
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            Instant candidateDeparture = date.atTime(timeOfDay).atZone(ZoneOffset.UTC).toInstant();
+            if (rideRepository.existsByDriverIdAndDepartureTimeAndStatusIn(request.getDriverId(),
+                    candidateDeparture, ACTIVE_RIDE_STATUSES)) {
+                return ApiResponse.error(
+                        "You already have a ride scheduled on " + date + " at this exact time",
+                        HttpStatus.BAD_REQUEST);
+            }
+        }
+
+        // Fetch the driving polyline & H3 segments once - the route is identical for
+        // every day
         List<List<Double>> routeCoords = routingService.getRouteCoordinates(srcLat, srcLng, destLat, destLng);
         List<String> fullH3 = h3Service.pathToH3Segments(routeCoords);
 
@@ -284,67 +312,13 @@ public class RideController {
             return ApiResponse.error("Ride not found", HttpStatus.NOT_FOUND);
         }
 
-        ride.setStatus("COMPLETED");
-
-        // Keep only start and end H3 segments, deleting the intermediate path cells to
-        // save storage space
-        List<String> h3Segments = ride.getH3RouteSegments();
-        if (h3Segments != null && h3Segments.size() >= 2) {
-            String startH3 = h3Segments.get(0);
-            String endH3 = h3Segments.get(h3Segments.size() - 1);
-            ride.setH3RouteSegments(List.of(startH3, endH3));
-        }
-        List<List<Double>> routeCords = ride.getRouteCoords();
-        if (routeCords != null && routeCords.size() >= 2) {
-            List<Double> startCoord = routeCords.get(0);
-            List<Double> endCoord = routeCords.get(routeCords.size() - 1);
-            ride.setRouteCoords(List.of(startCoord, endCoord));
-        }
-
-        // Build execution details
-        Ride.ExecutionDetails details = new Ride.ExecutionDetails();
-        details.setStartTime(ride.getExecutionDetails().getStartTime());
-        details.setEndTime(Instant.now());
-
         double distanceKm = body != null && body.get("actualDistanceKm") != null
                 ? ((Number) body.get("actualDistanceKm")).doubleValue()
                 : 10.0;
-        details.setActualDistanceKm(distanceKm);
 
-        int passengerCount = ride.getPassengerIds().size();
-        Ride.EnvironmentalOffset offset = carbonService.calculateOffset(distanceKm, Math.max(1, passengerCount));
-        details.setEnvironmentalOffset(offset);
-
-        List<LocationPoint.GeoJsonPoint> traj = new ArrayList<>();
-        if (ride.getSource() != null && ride.getSource().getLocation() != null) {
-            traj.add(ride.getSource().getLocation());
-        }
-        if (ride.getDestination() != null && ride.getDestination().getLocation() != null) {
-            traj.add(ride.getDestination().getLocation());
-        }
-        details.setActualTrajectoryPoints(traj);
-
-        ride.setExecutionDetails(details);
-
-        Ride saved = rideRepository.save(ride);
-
-        // Credit the driver's cumulative CO2 total
-        carbonService.creditCarbonToDriver(ride.getDriverId(), offset.getNetReducedCo2Kg());
-        notificationService.create(ride.getDriverId(), Notification.Type.RIDE_COMPLETED, "Ride completed",
-                "Your ride is complete: " + offset.getNetReducedCo2Kg() + " kg CO2 saved.", saved.getId());
-
-        // Credit each passenger's cumulative CO2 total
-        if (ride.getPassengerIds() != null) {
-            double passengerCo2 = carbonService.calculatePassengerOffset(distanceKm);
-            for (String passengerId : ride.getPassengerIds()) {
-                carbonService.creditCarbonToUser(passengerId, passengerCo2);
-                notificationService.create(passengerId, Notification.Type.RIDE_COMPLETED, "Ride completed",
-                        "Your ride is complete: " + passengerCo2 + " kg CO2 saved.", saved.getId());
-            }
-        }
+        Ride saved = rideLifecycleService.completeRide(ride, distanceKm);
 
         return ApiResponse.success(saved, "Ride completed successfully");
-
     }
 
 }

@@ -180,19 +180,6 @@ export default function Navbar() {
           </Button>
         )}
 
-        {/* Flag Indicator */}
-        <Tooltip title="India Region">
-          <span
-            style={{
-              fontSize: "1.4rem",
-              cursor: "default",
-              userSelect: "none",
-            }}
-          >
-            🇮🇳
-          </span>
-        </Tooltip>
-
         {/* CO2 and Rating Badges */}
         <Space size="small">
           <Tooltip title="Carbon Saved">

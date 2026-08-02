@@ -4,6 +4,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -31,6 +32,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 
 @SpringBootTest
@@ -67,12 +70,13 @@ class RideControllerTest {
    @WithMockUser(username = "driver1", roles = {"DRIVER"})
     void testCreateRide() throws Exception {
 
+        String futureDeparture = Instant.now().plusSeconds(24 * 3600).toString();
         String jsonPayload = """
                 {
                     "driverId": "driver-777",
                     "driverName": "Sarah Jenkins",
                     "totalSeats": 4,
-                    "departureTime": "2026-06-18T10:00:00Z",
+                    "departureTime": "%s",
                     "source": {
                         "name": "Alpha Office",
                         "location": {
@@ -88,7 +92,7 @@ class RideControllerTest {
                         }
                     }
                 }
-                """;
+                """.formatted(futureDeparture);
 
         mockMvc.perform(post("/api/rides")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -111,16 +115,13 @@ class RideControllerTest {
         assertNotNull(savedRide.getH3RouteSegments());
     }
 
-    @Test
-    @WithMockUser(username = "driver1", roles = {"DRIVER"})
-    void testCreateMultiDayRides_createsOneRidePerDay() throws Exception {
-        String jsonPayload = """
+    private static String ridePayload(String driverId, String departureTime) {
+        return """
                 {
-                    "driverId": "driver-777",
+                    "driverId": "%s",
                     "driverName": "Sarah Jenkins",
                     "totalSeats": 4,
-                    "departureTime": "2026-06-18T10:00:00Z",
-                    "toDate": "2026-06-20",
+                    "departureTime": "%s",
                     "source": {
                         "name": "Alpha Office",
                         "location": {
@@ -136,7 +137,93 @@ class RideControllerTest {
                         }
                     }
                 }
-                """;
+                """.formatted(driverId, departureTime);
+    }
+
+    @Test
+    @WithMockUser(username = "driver1", roles = {"DRIVER"})
+    void testCreateRide_rejectsPastDepartureTime() throws Exception {
+        String pastDeparture = Instant.now().minusSeconds(3600).toString();
+
+        mockMvc.perform(post("/api/rides")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(ridePayload("driver-777", pastDeparture)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Departure time cannot be in the past"));
+
+        assertEquals(0, rideRepository.findAll().size());
+    }
+
+    @Test
+    @WithMockUser(username = "driver1", roles = {"DRIVER"})
+    void testCreateRide_rejectsDuplicateDriverTimeSlot() throws Exception {
+        String departureTime = Instant.now().plusSeconds(24 * 3600).toString();
+
+        mockMvc.perform(post("/api/rides")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(ridePayload("driver-777", departureTime)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/rides")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(ridePayload("driver-777", departureTime)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message")
+                        .value("You already have a ride scheduled at this exact date and time"));
+
+        assertEquals(1, rideRepository.findAll().size());
+    }
+
+    @Test
+    @WithMockUser(username = "driver1", roles = {"DRIVER"})
+    void testCreateRide_allowsDifferentDriversAtSameTimeSlot() throws Exception {
+        String departureTime = Instant.now().plusSeconds(24 * 3600).toString();
+
+        mockMvc.perform(post("/api/rides")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(ridePayload("driver-777", departureTime)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/rides")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(ridePayload("driver-888", departureTime)))
+                .andExpect(status().isOk());
+
+        assertEquals(2, rideRepository.findAll().size());
+    }
+
+    @Test
+    @WithMockUser(username = "driver1", roles = {"DRIVER"})
+    void testCreateMultiDayRides_createsOneRidePerDay() throws Exception {
+        LocalDate startDate = LocalDate.now(ZoneOffset.UTC).plusDays(1);
+        LocalDate endDate = startDate.plusDays(2);
+        String departureTime = startDate.atTime(10, 0).atZone(ZoneOffset.UTC).toInstant().toString();
+
+        String jsonPayload = """
+                {
+                    "driverId": "driver-777",
+                    "driverName": "Sarah Jenkins",
+                    "totalSeats": 4,
+                    "departureTime": "%s",
+                    "toDate": "%s",
+                    "source": {
+                        "name": "Alpha Office",
+                        "location": {
+                            "type": "Point",
+                            "coordinates": [77.5946, 12.9716]
+                        }
+                    },
+                    "destination": {
+                        "name": "Beta Tech Park",
+                        "location": {
+                            "type": "Point",
+                            "coordinates": [77.6413, 12.9279]
+                        }
+                    }
+                }
+                """.formatted(departureTime, endDate);
 
         mockMvc.perform(post("/api/rides/multi-day")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -152,25 +239,28 @@ class RideControllerTest {
             assertEquals(4, ride.getAvailableSeats());
             assertEquals("ACTIVE", ride.getStatus());
             assertNotNull(ride.getH3RouteSegments());
-            assertEquals(10, ride.getDepartureTime().atZone(java.time.ZoneOffset.UTC).getHour());
+            assertEquals(10, ride.getDepartureTime().atZone(ZoneOffset.UTC).getHour());
         }
 
         List<String> departureDates = savedRides.stream()
-                .map(r -> r.getDepartureTime().atZone(java.time.ZoneOffset.UTC).toLocalDate().toString())
+                .map(r -> r.getDepartureTime().atZone(ZoneOffset.UTC).toLocalDate().toString())
                 .sorted()
                 .toList();
-        assertEquals(List.of("2026-06-18", "2026-06-19", "2026-06-20"), departureDates);
+        assertEquals(
+                List.of(startDate.toString(), startDate.plusDays(1).toString(), endDate.toString()),
+                departureDates);
     }
 
     @Test
     @WithMockUser(username = "driver1", roles = {"DRIVER"})
     void testCreateMultiDayRides_singleDayWhenNoToDateProvided() throws Exception {
+        String futureDeparture = Instant.now().plusSeconds(24 * 3600).toString();
         String jsonPayload = """
                 {
                     "driverId": "driver-777",
                     "driverName": "Sarah Jenkins",
                     "totalSeats": 4,
-                    "departureTime": "2026-06-18T10:00:00Z",
+                    "departureTime": "%s",
                     "source": {
                         "name": "Alpha Office",
                         "location": {
@@ -186,7 +276,7 @@ class RideControllerTest {
                         }
                     }
                 }
-                """;
+                """.formatted(futureDeparture);
 
         mockMvc.perform(post("/api/rides/multi-day")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -200,13 +290,17 @@ class RideControllerTest {
     @Test
     @WithMockUser(username = "driver1", roles = {"DRIVER"})
     void testCreateMultiDayRides_rejectsToDateBeforeDeparture() throws Exception {
+        LocalDate departureDate = LocalDate.now(ZoneOffset.UTC).plusDays(10);
+        LocalDate earlierToDate = LocalDate.now(ZoneOffset.UTC).plusDays(2);
+        String departureTime = departureDate.atTime(10, 0).atZone(ZoneOffset.UTC).toInstant().toString();
+
         String jsonPayload = """
                 {
                     "driverId": "driver-777",
                     "driverName": "Sarah Jenkins",
                     "totalSeats": 4,
-                    "departureTime": "2026-06-18T10:00:00Z",
-                    "toDate": "2026-06-10",
+                    "departureTime": "%s",
+                    "toDate": "%s",
                     "source": {
                         "name": "Alpha Office",
                         "location": {
@@ -222,7 +316,7 @@ class RideControllerTest {
                         }
                     }
                 }
-                """;
+                """.formatted(departureTime, earlierToDate);
 
         mockMvc.perform(post("/api/rides/multi-day")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -237,13 +331,17 @@ class RideControllerTest {
     @Test
     @WithMockUser(username = "driver1", roles = {"DRIVER"})
     void testCreateMultiDayRides_rejectsRangeExceedingMax() throws Exception {
+        LocalDate departureDate = LocalDate.now(ZoneOffset.UTC).plusDays(1);
+        LocalDate farToDate = departureDate.plusDays(35);
+        String departureTime = departureDate.atTime(10, 0).atZone(ZoneOffset.UTC).toInstant().toString();
+
         String jsonPayload = """
                 {
                     "driverId": "driver-777",
                     "driverName": "Sarah Jenkins",
                     "totalSeats": 4,
-                    "departureTime": "2026-06-01T10:00:00Z",
-                    "toDate": "2026-08-01",
+                    "departureTime": "%s",
+                    "toDate": "%s",
                     "source": {
                         "name": "Alpha Office",
                         "location": {
@@ -259,7 +357,7 @@ class RideControllerTest {
                         }
                     }
                 }
-                """;
+                """.formatted(departureTime, farToDate);
 
         mockMvc.perform(post("/api/rides/multi-day")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -269,6 +367,70 @@ class RideControllerTest {
                 .andExpect(jsonPath("$.message").value("Date range cannot exceed 30 days"));
 
         assertEquals(0, rideRepository.findAll().size());
+    }
+
+    @Test
+    @WithMockUser(username = "driver1", roles = {"DRIVER"})
+    void testCreateMultiDayRides_rejectsPastDepartureTime() throws Exception {
+        String pastDeparture = Instant.now().minusSeconds(3600).toString();
+
+        mockMvc.perform(post("/api/rides/multi-day")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(ridePayload("driver-777", pastDeparture)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Departure time cannot be in the past"));
+
+        assertEquals(0, rideRepository.findAll().size());
+    }
+
+    @Test
+    @WithMockUser(username = "driver1", roles = {"DRIVER"})
+    void testCreateMultiDayRides_rejectsWhenADayConflictsWithAnExistingRide() throws Exception {
+        LocalDate startDate = LocalDate.now(ZoneOffset.UTC).plusDays(1);
+        LocalDate endDate = startDate.plusDays(2);
+        Instant conflictingDeparture = startDate.plusDays(1).atTime(10, 0).atZone(ZoneOffset.UTC).toInstant();
+
+        // Pre-existing ride that lands on day 2 of the upcoming multi-day request
+        mockMvc.perform(post("/api/rides")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(ridePayload("driver-777", conflictingDeparture.toString())))
+                .andExpect(status().isOk());
+
+        String departureTime = startDate.atTime(10, 0).atZone(ZoneOffset.UTC).toInstant().toString();
+        String jsonPayload = """
+                {
+                    "driverId": "driver-777",
+                    "driverName": "Sarah Jenkins",
+                    "totalSeats": 4,
+                    "departureTime": "%s",
+                    "toDate": "%s",
+                    "source": {
+                        "name": "Alpha Office",
+                        "location": {
+                            "type": "Point",
+                            "coordinates": [77.5946, 12.9716]
+                        }
+                    },
+                    "destination": {
+                        "name": "Beta Tech Park",
+                        "location": {
+                            "type": "Point",
+                            "coordinates": [77.6413, 12.9279]
+                        }
+                    }
+                }
+                """.formatted(departureTime, endDate);
+
+        mockMvc.perform(post("/api/rides/multi-day")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonPayload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message", containsString("already have a ride scheduled")));
+
+        // Only the single pre-existing ride should exist - the whole batch was rejected
+        assertEquals(1, rideRepository.findAll().size());
     }
 
     @Test
