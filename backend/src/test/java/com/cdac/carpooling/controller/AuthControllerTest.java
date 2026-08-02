@@ -3,11 +3,13 @@ package com.cdac.carpooling.controller;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.cdac.carpooling.repository.UserRepository;
+import com.cdac.carpooling.security.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +29,9 @@ class AuthControllerTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @BeforeEach
     void setUp() {
@@ -130,5 +135,121 @@ class AuthControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.errors.email").value("Please provide a valid email address"));
+    }
+
+    private void registerTestUser(String email, String password) throws Exception {
+        String payload = """
+                {
+                  "name": "Reset Test User",
+                  "email": "%s",
+                  "phone": "9876543210",
+                  "password": "%s",
+                  "roles": ["PASSENGER"]
+                }
+                """.formatted(email, password);
+
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void forgotPassword_shouldSucceedForRegisteredEmail() throws Exception {
+        registerTestUser("reset1@example.com", "originalPass123");
+
+        String payload = """
+                { "email": "reset1@example.com" }
+                """;
+
+        mockMvc.perform(post("/api/auth/forgot-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Password reset link sent to your email. Please check your inbox."));
+    }
+
+    @Test
+    void forgotPassword_shouldFailForUnregisteredEmail() throws Exception {
+        String payload = """
+                { "email": "nobody@example.com" }
+                """;
+
+        mockMvc.perform(post("/api/auth/forgot-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    void verifyResetToken_shouldSucceedForValidToken() throws Exception {
+        registerTestUser("reset2@example.com", "originalPass123");
+        String token = jwtUtil.generatePasswordResetToken("reset2@example.com");
+
+        mockMvc.perform(get("/api/auth/verify-reset-token").param("token", token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").value("reset2@example.com"));
+    }
+
+    @Test
+    void verifyResetToken_shouldRejectARegistrationToken() throws Exception {
+        // A registration token must not double as a password reset token, and vice versa.
+        String registrationToken = jwtUtil.generateRegistrationToken("reset3@example.com");
+
+        mockMvc.perform(get("/api/auth/verify-reset-token").param("token", registrationToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    void resetPassword_shouldUpdatePasswordAndAllowLoginWithNewPassword() throws Exception {
+        registerTestUser("reset4@example.com", "originalPass123");
+        String token = jwtUtil.generatePasswordResetToken("reset4@example.com");
+
+        String resetPayload = """
+                { "token": "%s", "newPassword": "brandNewPass456" }
+                """.formatted(token);
+
+        mockMvc.perform(post("/api/auth/reset-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(resetPayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        // Old password must no longer work
+        String oldLoginPayload = """
+                { "email": "reset4@example.com", "password": "originalPass123" }
+                """;
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(oldLoginPayload))
+                .andExpect(jsonPath("$.success").value(false));
+
+        // New password must work
+        String newLoginPayload = """
+                { "email": "reset4@example.com", "password": "brandNewPass456" }
+                """;
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(newLoginPayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.token").value(notNullValue()));
+    }
+
+    @Test
+    void resetPassword_shouldFailForInvalidToken() throws Exception {
+        String resetPayload = """
+                { "token": "not-a-real-token", "newPassword": "brandNewPass456" }
+                """;
+
+        mockMvc.perform(post("/api/auth/reset-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(resetPayload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
     }
 }

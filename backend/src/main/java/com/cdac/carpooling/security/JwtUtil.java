@@ -139,4 +139,35 @@ public class JwtUtil {
             throw new RuntimeException("Invalid or expired registration token: " + e.getMessage());
         }
     }
+
+    // Temporary password reset token valid for 30 minutes
+    public String generatePasswordResetToken(String email) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + (30 * 60 * 1000));
+
+        return Jwts.builder()
+                .setSubject(email)
+                .claim("type", "PASSWORD_RESET")
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+                .compact();
+    }
+
+    // Validating password reset token and return email if valid
+    public String validatePasswordResetToken(String token) {
+        try {
+            Claims claims = extractAllClaims(token);
+            String type = claims.get("type", String.class);
+            if (!"PASSWORD_RESET".equals(type)) {
+                throw new IllegalArgumentException("Invalid token type");
+            }
+            if (claims.getExpiration().before(new Date())) {
+                throw new IllegalArgumentException("Token has expired");
+            }
+            return claims.getSubject();
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid or expired password reset token: " + e.getMessage());
+        }
+    }
 }

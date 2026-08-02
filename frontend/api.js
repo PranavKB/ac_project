@@ -73,6 +73,23 @@ export const authAPI = {
     });
     return res.data;
   },
+  forgotPassword: async (email) => {
+    const res = await API.post("/auth/forgot-password", { email });
+    return res.data;
+  },
+  verifyResetToken: async (token) => {
+    const res = await API.get(
+      `/auth/verify-reset-token?token=${encodeURIComponent(token)}`,
+    );
+    return res.data;
+  },
+  resetPassword: async (token, newPassword) => {
+    const res = await API.post("/auth/reset-password", {
+      token,
+      newPassword,
+    });
+    return res.data;
+  },
 };
 
 export const rideAPI = {
