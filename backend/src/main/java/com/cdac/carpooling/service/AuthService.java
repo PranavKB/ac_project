@@ -76,6 +76,28 @@ public class AuthService {
         return savedUser;
     }
 
+    public void requestPasswordReset(String email) {
+        if (!userRepository.existsByEmail(email)) {
+            throw new RuntimeException("No account found with email: " + email);
+        }
+
+        String resetToken = jwtUtil.generatePasswordResetToken(email);
+        emailService.sendPasswordResetEmail(email, resetToken);
+    }
+
+    public String verifyPasswordResetToken(String token) {
+        return jwtUtil.validatePasswordResetToken(token);
+    }
+
+    public void resetPassword(String token, String newPassword) {
+        String email = jwtUtil.validatePasswordResetToken(token);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found: " + email));
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
     public User login(String email, String password) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found: " + email));

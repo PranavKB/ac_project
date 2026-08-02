@@ -53,6 +53,32 @@ public class EmailService {
     }
 
     @Async
+    public void sendPasswordResetEmail(String toEmail, String token) {
+        try {
+            String resetLink = frontendUrl + "/reset-password?token=" + token;
+
+            Context context = new Context();
+            context.setVariable("email", toEmail);
+            context.setVariable("resetLink", resetLink);
+
+            String htmlContent = templateEngine.process("mail/reset-password-email", context);
+
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject("Reset Your Password - Carpooling");
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+            log.info("Password reset email sent successfully to {}", toEmail);
+        } catch (MessagingException e) {
+            log.error("Failed to send password reset email to {}", toEmail, e);
+            throw new RuntimeException("Error sending password reset email: " + e.getMessage(), e);
+        }
+    }
+
+    @Async
     public void sendRegistrationSuccessEmail(String toEmail, String userName) {
         try {
             String loginLink = frontendUrl + "/login";
