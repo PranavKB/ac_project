@@ -88,6 +88,18 @@ public class RideLifecycleService {
 
     private void cancelRide(Ride ride) {
         ride.setStatus("CANCELLED");
+
+        // Keep only start and end H3 segments/coords, deleting the intermediate path
+        // cells to save storage space - mirrors the trim done on completion.
+        List<String> h3Segments = ride.getH3RouteSegments();
+        if (h3Segments != null && h3Segments.size() >= 2) {
+            ride.setH3RouteSegments(List.of(h3Segments.get(0), h3Segments.get(h3Segments.size() - 1)));
+        }
+        List<List<Double>> routeCoords = ride.getRouteCoords();
+        if (routeCoords != null && routeCoords.size() >= 2) {
+            ride.setRouteCoords(List.of(routeCoords.get(0), routeCoords.get(routeCoords.size() - 1)));
+        }
+
         Ride saved = rideRepository.save(ride);
 
         notificationService.create(ride.getDriverId(), Notification.Type.RIDE_CANCELLED,

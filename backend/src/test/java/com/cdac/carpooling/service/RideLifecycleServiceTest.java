@@ -61,12 +61,26 @@ class RideLifecycleServiceTest {
         ride.setStatus("ACTIVE");
         ride.setDepartureTime(Instant.now().minusSeconds(3600));
         ride.setPassengerIds(List.of(passenger.getId()));
+        ride.setH3RouteSegments(List.of("h3_1", "h3_2", "h3_3", "h3_4"));
+        ride.setRouteCoords(List.of(
+                List.of(12.97, 77.59),
+                List.of(12.96, 77.60),
+                List.of(12.95, 77.61),
+                List.of(12.93, 77.64)));
         Ride saved = rideRepository.save(ride);
 
         rideLifecycleService.expireStaleRides();
 
         Ride updated = rideRepository.findById(saved.getId()).orElseThrow();
         assertEquals("CANCELLED", updated.getStatus());
+
+        // Only source/destination H3 cells and coordinates should remain
+        assertEquals(2, updated.getH3RouteSegments().size());
+        assertEquals("h3_1", updated.getH3RouteSegments().get(0));
+        assertEquals("h3_4", updated.getH3RouteSegments().get(1));
+        assertEquals(2, updated.getRouteCoords().size());
+        assertEquals(List.of(12.97, 77.59), updated.getRouteCoords().get(0));
+        assertEquals(List.of(12.93, 77.64), updated.getRouteCoords().get(1));
 
         List<Notification> driverNotifs = notificationRepository.findByUserIdOrderByCreatedAtDesc(driver.getId());
         assertTrue(driverNotifs.stream().anyMatch(n -> n.getType() == Notification.Type.RIDE_CANCELLED));
