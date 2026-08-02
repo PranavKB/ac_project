@@ -14,6 +14,8 @@ import StyleGuide from "../pages/StyleGuide/StyleGuide";
 import SocketTestPage from "../pages/SocketTest/SocketTestPage";
 import Profile from "../components/Profile";
 import RequestRegisterLinkPage from "../pages/Auth/RequestRegisterLinkPage";
+import ForgotPasswordPage from "../pages/Auth/ForgotPasswordPage";
+import ResetPasswordPage from "../pages/Auth/ResetPasswordPage";
 import AdminLayout from "../pages/Admin/AdminLayout";
 import AdminOverview from "../pages/Admin/AdminOverview";
 import AdminUsers from "../pages/Admin/AdminUsers";
@@ -38,6 +40,8 @@ function AppRoutes() {
             path="/request-register-link"
             element={<RequestRegisterLinkPage />}
           />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/socket-test" element={<SocketTestPage />} />
           <Route
             path="/profile"

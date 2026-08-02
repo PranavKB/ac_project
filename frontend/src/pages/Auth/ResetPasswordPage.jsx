@@ -1,23 +1,9 @@
 import { useState, useEffect } from "react";
 import { authAPI } from "../../../api";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import RequestRegisterLinkPage from "./RequestRegisterLinkPage";
-import {
-  Card,
-  Form,
-  Input,
-  Button,
-  Checkbox,
-  Alert,
-  Spin,
-  Typography,
-} from "antd";
-import {
-  UserOutlined,
-  MailOutlined,
-  PhoneOutlined,
-  LockOutlined,
-} from "@ant-design/icons";
+import ForgotPasswordPage from "./ForgotPasswordPage";
+import { Card, Form, Input, Button, Alert, Spin, Typography } from "antd";
+import { LockOutlined } from "@ant-design/icons";
 
 const { Title, Paragraph } = Typography;
 
@@ -31,7 +17,7 @@ function VerifyingTokenView() {
         minHeight: "80vh",
       }}
     >
-      <Spin size="large" tip="Verifying registration link..." />
+      <Spin size="large" tip="Verifying reset link..." />
     </div>
   );
 }
@@ -75,7 +61,7 @@ function TokenInvalidView({ error, onReset }) {
   );
 }
 
-function RegisteredSuccessView({ email, onProceed }) {
+function ResetSuccessView({ onProceed }) {
   return (
     <div
       style={{
@@ -96,11 +82,11 @@ function RegisteredSuccessView({ email, onProceed }) {
         }}
       >
         <Title level={2} style={{ color: "#52c41a", fontWeight: 800 }}>
-          Registered Successfully!
+          Password Reset!
         </Title>
         <Paragraph type="secondary" style={{ margin: "20px 0" }}>
-          Your account has been created. A confirmation email has been sent to{" "}
-          <strong>{email}</strong>.
+          Your password has been changed successfully. You can now log in with
+          your new password.
         </Paragraph>
         <Button
           type="primary"
@@ -116,18 +102,17 @@ function RegisteredSuccessView({ email, onProceed }) {
   );
 }
 
-export default function RegisterPage() {
+export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
-  const emailParam = searchParams.get("email");
 
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [verifyingToken, setVerifyingToken] = useState(!!token);
   const [tokenValid, setTokenValid] = useState(false);
+  const [email, setEmail] = useState("");
   const [error, setError] = useState("");
-  const [fieldErrors, setFieldErrors] = useState({});
-  const [registeredSuccess, setRegisteredSuccess] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -135,10 +120,9 @@ export default function RegisterPage() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setVerifyingToken(true);
       authAPI
-        .verifyToken(token)
+        .verifyResetToken(token)
         .then((res) => {
-          const emailFromToken = res.data || emailParam || "";
-          form.setFieldsValue({ email: emailFromToken });
+          setEmail(res.data || "");
           setTokenValid(true);
           setError("");
         })
@@ -147,54 +131,31 @@ export default function RegisterPage() {
           const respData = err.response?.data;
           setError(
             respData?.message ||
-              "Registration link is invalid or has expired. Please request a new link.",
+              "Password reset link is invalid or has expired. Please request a new link.",
           );
         })
         .finally(() => {
           setVerifyingToken(false);
         });
     }
-  }, [token, emailParam, form]);
+  }, [token]);
 
   if (!token) {
-    return <RequestRegisterLinkPage />;
+    return <ForgotPasswordPage />;
   }
-
-  const handleValidationErrors = (respData) => {
-    if (
-      respData?.errors &&
-      typeof respData.errors === "object" &&
-      !Array.isArray(respData.errors)
-    ) {
-      setFieldErrors(respData.errors);
-      const errorList = Object.values(respData.errors).join(". ");
-      setError(errorList || respData.message || "Validation failed.");
-    } else if (respData?.errors && Array.isArray(respData.errors)) {
-      setError(respData.errors.join(". "));
-    } else {
-      setError(
-        String(respData?.errors || respData?.message || "Registration failed."),
-      );
-    }
-  };
 
   const onFinish = async (values) => {
     setLoading(true);
     setError("");
-    setFieldErrors({});
 
     try {
-      await authAPI.register(
-        values.name,
-        values.email,
-        values.phone,
-        values.password,
-        values.roles,
-        token,
-      );
-      setRegisteredSuccess(true);
+      await authAPI.resetPassword(token, values.newPassword);
+      setResetSuccess(true);
     } catch (err) {
-      handleValidationErrors(err.response?.data);
+      setError(
+        err.response?.data?.message ||
+          "Failed to reset password. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -203,15 +164,13 @@ export default function RegisterPage() {
   if (verifyingToken) return <VerifyingTokenView />;
   if (!tokenValid)
     return (
-      <TokenInvalidView error={error} onReset={() => navigate("/register")} />
-    );
-  if (registeredSuccess)
-    return (
-      <RegisteredSuccessView
-        email={form.getFieldValue("email")}
-        onProceed={() => navigate("/login")}
+      <TokenInvalidView
+        error={error}
+        onReset={() => navigate("/forgot-password")}
       />
     );
+  if (resetSuccess)
+    return <ResetSuccessView onProceed={() => navigate("/login")} />;
 
   return (
     <div
@@ -220,13 +179,13 @@ export default function RegisterPage() {
         justifyContent: "center",
         alignItems: "center",
         minHeight: "80vh",
-        padding: "30px 24px",
+        padding: "0 24px",
       }}
     >
       <Card
         style={{
           width: "100%",
-          maxWidth: "480px",
+          maxWidth: "400px",
           borderRadius: "16px",
           border: "1px solid #eef0f2",
           boxShadow: "0 8px 24px rgba(0,0,0,0.02)",
@@ -237,10 +196,10 @@ export default function RegisterPage() {
             level={2}
             style={{ color: "#054752", fontWeight: 800, margin: 0 }}
           >
-            Complete Registration
+            Reset Password
           </Title>
           <Paragraph type="secondary" style={{ margin: "4px 0 0" }}>
-            Fill out your details to create your account
+            Choose a new password for <strong>{email}</strong>
           </Paragraph>
         </div>
 
@@ -258,59 +217,17 @@ export default function RegisterPage() {
           layout="vertical"
           onFinish={onFinish}
           requiredMark={false}
-          initialValues={{ roles: ["DRIVER", "PASSENGER"] }}
         >
           <Form.Item
-            name="name"
-            label="Full Name"
-            rules={[{ required: true, message: "Please enter your name!" }]}
-            validateStatus={fieldErrors.name ? "error" : ""}
-            help={fieldErrors.name}
-          >
-            <Input
-              size="large"
-              prefix={<UserOutlined style={{ color: "#708c91" }} />}
-              placeholder="John Doe"
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="email"
-            label="Email Address"
-            rules={[{ required: true }]}
-            validateStatus={fieldErrors.email ? "error" : ""}
-            help={fieldErrors.email}
-          >
-            <Input
-              size="large"
-              prefix={<MailOutlined style={{ color: "#708c91" }} />}
-              readOnly
-              style={{ backgroundColor: "#f5f5f5", cursor: "not-allowed" }}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="phone"
-            label="Phone"
+            name="newPassword"
+            label="New Password"
             rules={[
-              { required: true, message: "Please enter your phone number!" },
+              { required: true, message: "Please enter a new password!" },
+              {
+                min: 6,
+                message: "Password must be at least 6 characters long",
+              },
             ]}
-            validateStatus={fieldErrors.phone ? "error" : ""}
-            help={fieldErrors.phone}
-          >
-            <Input
-              size="large"
-              prefix={<PhoneOutlined style={{ color: "#708c91" }} />}
-              placeholder="10-digit mobile number"
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="password"
-            label="Password"
-            rules={[{ required: true, message: "Please choose a password!" }]}
-            validateStatus={fieldErrors.password ? "error" : ""}
-            help={fieldErrors.password}
           >
             <Input.Password
               size="large"
@@ -320,20 +237,26 @@ export default function RegisterPage() {
           </Form.Item>
 
           <Form.Item
-            name="roles"
-            label="Roles"
+            name="confirmPassword"
+            label="Confirm New Password"
+            dependencies={["newPassword"]}
             rules={[
-              { required: true, message: "Please choose at least one role!" },
+              { required: true, message: "Please confirm your password!" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue("newPassword") === value) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(new Error("Passwords do not match"));
+                },
+              }),
             ]}
-            validateStatus={fieldErrors.roles ? "error" : ""}
-            help={fieldErrors.roles}
           >
-            <Checkbox.Group style={{ width: "100%" }}>
-              <Checkbox value="DRIVER" style={{ marginRight: "24px" }}>
-                Driver
-              </Checkbox>
-              <Checkbox value="PASSENGER">Passenger</Checkbox>
-            </Checkbox.Group>
+            <Input.Password
+              size="large"
+              prefix={<LockOutlined style={{ color: "#708c91" }} />}
+              placeholder="Re-enter your new password"
+            />
           </Form.Item>
 
           <Form.Item style={{ marginTop: "24px", marginBottom: "12px" }}>
@@ -345,23 +268,10 @@ export default function RegisterPage() {
               loading={loading}
               style={{ borderRadius: "12px", fontWeight: 600 }}
             >
-              Register Account
+              Reset Password
             </Button>
           </Form.Item>
         </Form>
-
-        <div
-          style={{ textAlign: "center", marginTop: "16px", color: "#708c91" }}
-        >
-          Already registered?{" "}
-          <Button
-            type="link"
-            onClick={() => navigate("/login")}
-            style={{ padding: 0, fontWeight: 600, color: "#00aff5" }}
-          >
-            Login
-          </Button>
-        </div>
       </Card>
     </div>
   );

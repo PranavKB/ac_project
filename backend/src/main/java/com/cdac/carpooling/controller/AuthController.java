@@ -9,6 +9,8 @@ import com.cdac.carpooling.service.AuthService;
 import com.cdac.carpooling.security.JwtUtil;
 import com.cdac.carpooling.dto.RegisterRequest;
 import com.cdac.carpooling.dto.RegisterLinkRequest;
+import com.cdac.carpooling.dto.ForgotPasswordRequest;
+import com.cdac.carpooling.dto.ResetPasswordRequest;
 import com.cdac.carpooling.dto.ApiResponse;
 import com.cdac.carpooling.dto.LoginRequest;
 import com.cdac.carpooling.dto.LoginResponse;
@@ -45,6 +47,24 @@ public class AuthController {
                 request.getRoles(),
                 request.getToken());
         return ApiResponse.success(user, "User registered successfully. A confirmation email has been sent.");
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Object>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.requestPasswordReset(request.getEmail());
+        return ApiResponse.success(null, "Password reset link sent to your email. Please check your inbox.");
+    }
+
+    @GetMapping("/verify-reset-token")
+    public ResponseEntity<ApiResponse<Object>> verifyResetToken(@RequestParam("token") String token) {
+        String email = authService.verifyPasswordResetToken(token);
+        return ApiResponse.success(email, "Password reset token verified successfully.");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Object>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request.getToken(), request.getNewPassword());
+        return ApiResponse.success(null, "Password reset successfully. You can now log in with your new password.");
     }
 
     @PostMapping("/login")
