@@ -1,8 +1,9 @@
 import { useState } from "react";
+import dayjs from "dayjs";
 import LocationInput from "./LocationInput";
 import { routeAPI } from "../../api";
 import useAuth from "../context/AuthContext/useAuth";
-import { publishRide } from "../utils/publishRideActions";
+import { publishRide, findConflictingDates } from "../utils/publishRideActions";
 import {
   Card,
   Form,
@@ -25,6 +26,7 @@ export default function PublishRide({
   onPublishSuccess,
   onMapUpdate,
   isEmbed = false,
+  postedRides = [],
 }) {
   const [form] = Form.useForm();
   const [isPreviewing, setIsPreviewing] = useState(false);
@@ -68,6 +70,15 @@ export default function PublishRide({
       Modal.error({
         title: "Validation Error",
         content: "Please select valid origin and destination locations.",
+      });
+      return;
+    }
+
+    const conflictingDates = findConflictingDates(values, postedRides);
+    if (conflictingDates.length > 0) {
+      Modal.error({
+        title: "Ride Already Scheduled",
+        content: `You already have a ride published at this exact date and time on: ${conflictingDates.join(", ")}. Please choose a different time or adjust your date range.`,
       });
       return;
     }
@@ -140,6 +151,21 @@ export default function PublishRide({
               format="YYYY-MM-DD HH:mm"
               placeholder="Select date & time"
               style={{ width: "100%" }}
+              disabledDate={(current) =>
+                current && current < dayjs().startOf("day")
+              }
+              disabledTime={(current) => {
+                if (!current || !current.isSame(dayjs(), "day")) return {};
+                const now = dayjs();
+                return {
+                  disabledHours: () =>
+                    Array.from({ length: now.hour() }, (_, i) => i),
+                  disabledMinutes: (selectedHour) =>
+                    selectedHour === now.hour()
+                      ? Array.from({ length: now.minute() + 1 }, (_, i) => i)
+                      : [],
+                };
+              }}
               prefix={<CalendarOutlined />}
             />
           </Form.Item>
@@ -148,10 +174,7 @@ export default function PublishRide({
 
       <Row gutter={16}>
         <Col span={24}>
-          <Form.Item
-            name="toDate"
-            label="To Date (optional — publish this same ride every day up to this date)"
-          >
+          <Form.Item name="toDate" label="To Date">
             <DatePicker
               format="YYYY-MM-DD"
               placeholder="Leave blank for a single day"

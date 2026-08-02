@@ -8,6 +8,7 @@ export default function OfferARide({
   onPublishSuccess,
   onMapUpdate,
   mapProps,
+  postedRides,
 }) {
   return (
     <Row gutter={[32, 32]}>
@@ -27,6 +28,7 @@ export default function OfferARide({
             isEmbed={true}
             onPublishSuccess={onPublishSuccess}
             onMapUpdate={onMapUpdate}
+            postedRides={postedRides}
           />
         </Card>
       </Col>

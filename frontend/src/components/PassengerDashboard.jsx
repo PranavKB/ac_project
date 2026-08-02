@@ -606,7 +606,7 @@ function SearchHeaderSection({
           Find a ride in seconds
         </Title>
         <Text type="secondary" style={{ fontSize: "1rem" }}>
-          Verified drivers, eco-friendly carbon savings, instant matching.
+          Make commuting greener with verified users.
         </Text>
       </div>
       <SearchForm

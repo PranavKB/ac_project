@@ -141,8 +141,16 @@ export default function DriverDashboard() {
   };
 
   const selectActiveRide = async (ride) => {
-    setSelectedRide(ride);
-    await updateMapRoute(ride.source, ride.destination, setPostedTripMapProps);
+    setSelectedRide(ride || null);
+    if (ride) {
+      await updateMapRoute(
+        ride.source,
+        ride.destination,
+        setPostedTripMapProps,
+      );
+    } else {
+      setPostedTripMapProps(EMPTY_MAP_PROPS);
+    }
   };
 
   const pendingRequests = rideRequests
@@ -177,6 +185,7 @@ export default function DriverDashboard() {
                 }}
                 onMapUpdate={setPublishMapProps}
                 mapProps={publishMapProps}
+                postedRides={postedRides}
               />
             ),
           },

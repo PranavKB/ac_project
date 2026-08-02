@@ -16,4 +16,7 @@ public interface RideRepository extends MongoRepository<Ride, String> {
     List<Ride> findByDriverId(String driverId);
 
     long countByStatus(String status);
+
+    boolean existsByDriverIdAndDepartureTimeAndStatusIn(String driverId, java.time.Instant departureTime,
+            List<String> statuses);
 }
