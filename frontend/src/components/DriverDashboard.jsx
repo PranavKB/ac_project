@@ -177,6 +177,7 @@ export default function DriverDashboard() {
                 }}
                 onMapUpdate={setPublishMapProps}
                 mapProps={publishMapProps}
+                postedRides={postedRides}
               />
             ),
           },

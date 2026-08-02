@@ -1,5 +1,34 @@
 import { Modal } from "antd";
+import dayjs from "dayjs";
 import { rideAPI } from "../../api";
+
+const ACTIVE_RIDE_STATUSES = ["ACTIVE", "ONGOING"];
+
+// Returns the "YYYY-MM-DD" dates (within the departureTime..toDate range) that
+// collide with an already-published ride at the exact same time of day -
+// mirrors the same-driver/same-slot check enforced server-side, but catches it
+// before a network round-trip.
+export const findConflictingDates = (values, postedRides) => {
+  if (!values.departureTime) return [];
+
+  const existingSlots = new Set(
+    (postedRides || [])
+      .filter((r) => ACTIVE_RIDE_STATUSES.includes(r.status) && r.departureTime)
+      .map((r) => dayjs(r.departureTime).format("YYYY-MM-DD HH:mm")),
+  );
+
+  const timeOfDay = values.departureTime.format("HH:mm");
+  const startDate = values.departureTime.startOf("day");
+  const endDate = values.toDate ? values.toDate.startOf("day") : startDate;
+
+  const conflicts = [];
+  for (let d = startDate; !d.isAfter(endDate); d = d.add(1, "day")) {
+    if (existingSlots.has(`${d.format("YYYY-MM-DD")} ${timeOfDay}`)) {
+      conflicts.push(d.format("YYYY-MM-DD"));
+    }
+  }
+  return conflicts;
+};
 
 const buildLocationPayload = (location) => ({
   name: location.name,

@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import LocationInput from "./LocationInput";
 import { routeAPI } from "../../api";
 import useAuth from "../context/AuthContext/useAuth";
-import { publishRide } from "../utils/publishRideActions";
+import { publishRide, findConflictingDates } from "../utils/publishRideActions";
 import {
   Card,
   Form,
@@ -26,6 +26,7 @@ export default function PublishRide({
   onPublishSuccess,
   onMapUpdate,
   isEmbed = false,
+  postedRides = [],
 }) {
   const [form] = Form.useForm();
   const [isPreviewing, setIsPreviewing] = useState(false);
@@ -69,6 +70,15 @@ export default function PublishRide({
       Modal.error({
         title: "Validation Error",
         content: "Please select valid origin and destination locations.",
+      });
+      return;
+    }
+
+    const conflictingDates = findConflictingDates(values, postedRides);
+    if (conflictingDates.length > 0) {
+      Modal.error({
+        title: "Ride Already Scheduled",
+        content: `You already have a ride published at this exact date and time on: ${conflictingDates.join(", ")}. Please choose a different time or adjust your date range.`,
       });
       return;
     }
