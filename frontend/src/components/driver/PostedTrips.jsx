@@ -1,13 +1,32 @@
-import { Card, Row, Col, Space, Tag, Button, Empty, Typography } from "antd";
+import { useState } from "react";
+import {
+  Card,
+  Row,
+  Col,
+  Space,
+  Tag,
+  Button,
+  Empty,
+  Select,
+  Typography,
+} from "antd";
 import {
   RightOutlined,
   FileTextOutlined,
   PlayCircleOutlined,
   SafetyCertificateOutlined,
 } from "@ant-design/icons";
+import dayjs from "dayjs";
 import MapComponent from "../MapComponent";
 
 const { Title, Text } = Typography;
+
+const STATUS_FILTER_OPTIONS = [
+  { value: "ALL", label: "All rides" },
+  { value: "ACTIVE", label: "ACTIVE rides" },
+  { value: "ONGOING", label: "ONGOING rides" },
+  { value: "COMPLETED", label: "COMPLETED rides" },
+];
 
 function PostedTripsList({
   postedRides,
@@ -15,6 +34,8 @@ function PostedTripsList({
   selectedRide,
   selectActiveRide,
 }) {
+  const [statusFilter, setStatusFilter] = useState("ALL");
+
   if (loadingRides) {
     return (
       <div style={{ textAlign: "center", padding: "20px" }}>
@@ -27,53 +48,70 @@ function PostedTripsList({
     return <Empty description="No posted trips yet." />;
   }
 
+  const filteredRides =
+    statusFilter === "ALL"
+      ? postedRides
+      : postedRides.filter((ride) => ride.status === statusFilter);
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-      {postedRides.map((ride) => (
-        <div
-          key={ride.id}
-          onClick={() => selectActiveRide(ride)}
-          style={{
-            border:
-              selectedRide?.id === ride.id
-                ? "1px solid #00aff5"
-                : "1px solid #eef0f2",
-            borderRadius: "12px",
-            padding: "16px",
-            cursor: "pointer",
-            backgroundColor:
-              selectedRide?.id === ride.id
-                ? "rgba(0,175,245,0.02)"
-                : "transparent",
-            transition: "all 0.2s",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <div>
+    <div>
+      <Select
+        value={statusFilter}
+        onChange={setStatusFilter}
+        options={STATUS_FILTER_OPTIONS}
+        style={{ width: "100%", marginBottom: "12px" }}
+      />
+      {filteredRides.length === 0 ? (
+        <Empty description="No posted trips match this filter." />
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {filteredRides.map((ride) => (
             <div
+              key={ride.id}
+              onClick={() => selectActiveRide(ride)}
               style={{
-                color: "#054752",
-                fontWeight: 700,
-                fontSize: "0.95rem",
-                marginBottom: "4px",
+                border:
+                  selectedRide?.id === ride.id
+                    ? "1px solid #00aff5"
+                    : "1px solid #eef0f2",
+                borderRadius: "12px",
+                padding: "16px",
+                cursor: "pointer",
+                backgroundColor:
+                  selectedRide?.id === ride.id
+                    ? "rgba(0,175,245,0.02)"
+                    : "transparent",
+                transition: "all 0.2s",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
               }}
             >
-              {ride.source?.name.split(",")[0]} {" -> "}
-              {ride.destination?.name.split(",")[0]}
+              <div>
+                <div
+                  style={{
+                    color: "#054752",
+                    fontWeight: 700,
+                    fontSize: "0.95rem",
+                    marginBottom: "4px",
+                  }}
+                >
+                  {ride.source?.name.split(",")[0]} {" -> "}
+                  {ride.destination?.name.split(",")[0]}
+                </div>
+                <Text type="secondary" style={{ fontSize: "0.85rem" }}>
+                  {ride.availableSeats} seat(s) left | Status: {ride.status}
+                </Text>
+              </div>
+              <RightOutlined
+                style={{
+                  color: selectedRide?.id === ride.id ? "#00aff5" : "#708c91",
+                }}
+              />
             </div>
-            <Text type="secondary" style={{ fontSize: "0.85rem" }}>
-              {ride.availableSeats} seat(s) left | Status: {ride.status}
-            </Text>
-          </div>
-          <RightOutlined
-            style={{
-              color: selectedRide?.id === ride.id ? "#00aff5" : "#708c91",
-            }}
-          />
+          ))}
         </div>
-      ))}
+      )}
     </div>
   );
 }
@@ -106,9 +144,16 @@ function SelectedRideCard({
             {selectedRide.source?.name.split(",")[0]} {" -> "}
             {selectedRide.destination?.name.split(",")[0]}
           </Title>
-          <Text type="secondary">
-            Status: <Tag color="processing">{selectedRide.status}</Tag>
-          </Text>
+          <Space size="middle">
+            {selectedRide.departureTime && (
+              <Text type="secondary">
+                {dayjs(selectedRide.departureTime).format("DD MMM YYYY, HH:mm")}
+              </Text>
+            )}
+            <Text type="secondary">
+              Status: <Tag color="processing">{selectedRide.status}</Tag>
+            </Text>
+          </Space>
         </div>
         <Button
           type="default"

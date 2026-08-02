@@ -80,6 +80,10 @@ export const rideAPI = {
     const res = await API.post("/rides", rideData);
     return res.data;
   },
+  createMultiDay: async (rideData) => {
+    const res = await API.post("/rides/multi-day", rideData);
+    return res.data;
+  },
   search: async (searchData) => {
     const res = await API.post("/rides/search", searchData);
     return res.data;

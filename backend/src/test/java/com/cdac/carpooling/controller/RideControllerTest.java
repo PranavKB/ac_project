@@ -4,6 +4,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -108,6 +109,166 @@ class RideControllerTest {
 
         assertEquals(List.of(77.5946, 12.9716), savedRide.getCurrentLocation());
         assertNotNull(savedRide.getH3RouteSegments());
+    }
+
+    @Test
+    @WithMockUser(username = "driver1", roles = {"DRIVER"})
+    void testCreateMultiDayRides_createsOneRidePerDay() throws Exception {
+        String jsonPayload = """
+                {
+                    "driverId": "driver-777",
+                    "driverName": "Sarah Jenkins",
+                    "totalSeats": 4,
+                    "departureTime": "2026-06-18T10:00:00Z",
+                    "toDate": "2026-06-20",
+                    "source": {
+                        "name": "Alpha Office",
+                        "location": {
+                            "type": "Point",
+                            "coordinates": [77.5946, 12.9716]
+                        }
+                    },
+                    "destination": {
+                        "name": "Beta Tech Park",
+                        "location": {
+                            "type": "Point",
+                            "coordinates": [77.6413, 12.9279]
+                        }
+                    }
+                }
+                """;
+
+        mockMvc.perform(post("/api/rides/multi-day")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonPayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("3 ride(s) published successfully"))
+                .andExpect(jsonPath("$.data", hasSize(3)));
+
+        List<Ride> savedRides = rideRepository.findAll();
+        assertEquals(3, savedRides.size());
+        for (Ride ride : savedRides) {
+            assertEquals("Sarah Jenkins", ride.getDriverName());
+            assertEquals(4, ride.getAvailableSeats());
+            assertEquals("ACTIVE", ride.getStatus());
+            assertNotNull(ride.getH3RouteSegments());
+            assertEquals(10, ride.getDepartureTime().atZone(java.time.ZoneOffset.UTC).getHour());
+        }
+
+        List<String> departureDates = savedRides.stream()
+                .map(r -> r.getDepartureTime().atZone(java.time.ZoneOffset.UTC).toLocalDate().toString())
+                .sorted()
+                .toList();
+        assertEquals(List.of("2026-06-18", "2026-06-19", "2026-06-20"), departureDates);
+    }
+
+    @Test
+    @WithMockUser(username = "driver1", roles = {"DRIVER"})
+    void testCreateMultiDayRides_singleDayWhenNoToDateProvided() throws Exception {
+        String jsonPayload = """
+                {
+                    "driverId": "driver-777",
+                    "driverName": "Sarah Jenkins",
+                    "totalSeats": 4,
+                    "departureTime": "2026-06-18T10:00:00Z",
+                    "source": {
+                        "name": "Alpha Office",
+                        "location": {
+                            "type": "Point",
+                            "coordinates": [77.5946, 12.9716]
+                        }
+                    },
+                    "destination": {
+                        "name": "Beta Tech Park",
+                        "location": {
+                            "type": "Point",
+                            "coordinates": [77.6413, 12.9279]
+                        }
+                    }
+                }
+                """;
+
+        mockMvc.perform(post("/api/rides/multi-day")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonPayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)));
+
+        assertEquals(1, rideRepository.findAll().size());
+    }
+
+    @Test
+    @WithMockUser(username = "driver1", roles = {"DRIVER"})
+    void testCreateMultiDayRides_rejectsToDateBeforeDeparture() throws Exception {
+        String jsonPayload = """
+                {
+                    "driverId": "driver-777",
+                    "driverName": "Sarah Jenkins",
+                    "totalSeats": 4,
+                    "departureTime": "2026-06-18T10:00:00Z",
+                    "toDate": "2026-06-10",
+                    "source": {
+                        "name": "Alpha Office",
+                        "location": {
+                            "type": "Point",
+                            "coordinates": [77.5946, 12.9716]
+                        }
+                    },
+                    "destination": {
+                        "name": "Beta Tech Park",
+                        "location": {
+                            "type": "Point",
+                            "coordinates": [77.6413, 12.9279]
+                        }
+                    }
+                }
+                """;
+
+        mockMvc.perform(post("/api/rides/multi-day")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonPayload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("To date must be on or after the departure date"));
+
+        assertEquals(0, rideRepository.findAll().size());
+    }
+
+    @Test
+    @WithMockUser(username = "driver1", roles = {"DRIVER"})
+    void testCreateMultiDayRides_rejectsRangeExceedingMax() throws Exception {
+        String jsonPayload = """
+                {
+                    "driverId": "driver-777",
+                    "driverName": "Sarah Jenkins",
+                    "totalSeats": 4,
+                    "departureTime": "2026-06-01T10:00:00Z",
+                    "toDate": "2026-08-01",
+                    "source": {
+                        "name": "Alpha Office",
+                        "location": {
+                            "type": "Point",
+                            "coordinates": [77.5946, 12.9716]
+                        }
+                    },
+                    "destination": {
+                        "name": "Beta Tech Park",
+                        "location": {
+                            "type": "Point",
+                            "coordinates": [77.6413, 12.9279]
+                        }
+                    }
+                }
+                """;
+
+        mockMvc.perform(post("/api/rides/multi-day")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonPayload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Date range cannot exceed 30 days"));
+
+        assertEquals(0, rideRepository.findAll().size());
     }
 
     @Test
