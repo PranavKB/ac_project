@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   Row,
@@ -34,7 +34,20 @@ function PostedTripsList({
   selectedRide,
   selectActiveRide,
 }) {
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState("ACTIVE");
+
+  const filteredRides =
+    statusFilter === "ALL"
+      ? postedRides
+      : postedRides.filter((ride) => ride.status === statusFilter);
+
+  useEffect(() => {
+    const stillVisible = filteredRides.some((r) => r.id === selectedRide?.id);
+    if (!stillVisible) {
+      selectActiveRide(filteredRides[0] || null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter]);
 
   if (loadingRides) {
     return (
@@ -47,11 +60,6 @@ function PostedTripsList({
   if (postedRides.length === 0) {
     return <Empty description="No posted trips yet." />;
   }
-
-  const filteredRides =
-    statusFilter === "ALL"
-      ? postedRides
-      : postedRides.filter((ride) => ride.status === statusFilter);
 
   return (
     <div>
