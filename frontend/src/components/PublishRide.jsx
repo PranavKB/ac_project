@@ -1,7 +1,8 @@
 import { useState } from "react";
 import LocationInput from "./LocationInput";
-import { rideAPI, routeAPI } from "../../api";
+import { routeAPI } from "../../api";
 import useAuth from "../context/AuthContext/useAuth";
+import { publishRide } from "../utils/publishRideActions";
 import {
   Card,
   Form,
@@ -32,6 +33,7 @@ export default function PublishRide({
   const [destinationLocation, setDestinationLocation] = useState(null);
 
   const { user } = useAuth();
+  const departureTime = Form.useWatch("departureTime", form);
 
   const handlePreview = async () => {
     if (!sourceLocation || !destinationLocation) {
@@ -72,58 +74,12 @@ export default function PublishRide({
 
     setIsPublishing(true);
     try {
-      const durationMins = parseInt(values.estimatedDurationMinutes, 10) || 0;
-      const departureISO = values.departureTime.toISOString();
-
-      const requestBody = {
-        driverId: user.data.id,
-        driverName: user.data.name,
-        totalSeats: parseInt(values.totalSeats, 10) || 1,
-        departureTime: departureISO,
-        estimatedDurationMinutes: durationMins,
-        pricePerSeat: values.pricePerSeat
-          ? parseFloat(values.pricePerSeat)
-          : null,
-        source: {
-          name: sourceLocation.name,
-          location: {
-            type: "Point",
-            // GeoJSON order: [longitude, latitude]
-            coordinates: [
-              parseFloat(sourceLocation.lng),
-              parseFloat(sourceLocation.lat),
-            ],
-          },
-        },
-        destination: {
-          name: destinationLocation.name,
-          location: {
-            type: "Point",
-            // GeoJSON order: [longitude, latitude]
-            coordinates: [
-              parseFloat(destinationLocation.lng),
-              parseFloat(destinationLocation.lat),
-            ],
-          },
-        },
-      };
-
-      const response = await rideAPI.create(requestBody);
-      const newRide = response?.data || response;
-
-      Modal.success({
-        title: "Ride Published!",
-        content:
-          "Your ride was created successfully and is now active for passenger matching.",
+      await publishRide(values, user, sourceLocation, destinationLocation, {
+        form,
+        setSourceLocation,
+        setDestinationLocation,
+        onPublishSuccess,
       });
-
-      form.resetFields();
-      setSourceLocation(null);
-      setDestinationLocation(null);
-
-      if (onPublishSuccess) {
-        await onPublishSuccess(newRide);
-      }
     } catch (error) {
       console.error("Error publishing ride:", error);
       Modal.error({
@@ -184,6 +140,27 @@ export default function PublishRide({
               format="YYYY-MM-DD HH:mm"
               placeholder="Select date & time"
               style={{ width: "100%" }}
+              prefix={<CalendarOutlined />}
+            />
+          </Form.Item>
+        </Col>
+      </Row>
+
+      <Row gutter={16}>
+        <Col span={24}>
+          <Form.Item
+            name="toDate"
+            label="To Date (optional — publish this same ride every day up to this date)"
+          >
+            <DatePicker
+              format="YYYY-MM-DD"
+              placeholder="Leave blank for a single day"
+              style={{ width: "100%" }}
+              disabledDate={(current) =>
+                departureTime &&
+                current &&
+                current < departureTime.startOf("day")
+              }
               prefix={<CalendarOutlined />}
             />
           </Form.Item>

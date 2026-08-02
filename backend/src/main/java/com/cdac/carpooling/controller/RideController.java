@@ -1,6 +1,11 @@
 package com.cdac.carpooling.controller;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +53,8 @@ public class RideController {
     private final NotificationService notificationService;
     private final UserRepository userRepository;
 
+    private static final int MAX_MULTI_DAY_RANGE = 30;
+
     @PostMapping
     public ResponseEntity<ApiResponse<Object>> createRide(@Valid @RequestBody RideCreationRequest request) {
         Ride ride = new Ride();
@@ -94,6 +101,83 @@ public class RideController {
             return ApiResponse.error("Failed to create ride. Please try again.");
         }
         return ApiResponse.success(saved, "Ride created Successfully");
+    }
+
+    @PostMapping("/multi-day")
+    public ResponseEntity<ApiResponse<Object>> createMultiDayRides(@Valid @RequestBody RideCreationRequest request) {
+        List<Double> srccoords = request.getSource().getLocation().getCoordinates();
+        List<Double> dstcoords = request.getDestination().getLocation().getCoordinates();
+
+        double srcLng = srccoords.get(0);
+        double srcLat = srccoords.get(1);
+        double destLng = dstcoords.get(0);
+        double destLat = dstcoords.get(1);
+
+        Instant firstDeparture;
+        if (request.getDepartureTime() != null && !request.getDepartureTime().isBlank()) {
+            firstDeparture = Instant.parse(request.getDepartureTime());
+        } else {
+            firstDeparture = Instant.now().plusSeconds(3600);
+        }
+
+        ZonedDateTime firstZoned = firstDeparture.atZone(ZoneOffset.UTC);
+        LocalDate startDate = firstZoned.toLocalDate();
+        LocalTime timeOfDay = firstZoned.toLocalTime();
+
+        LocalDate endDate = startDate;
+        if (request.getToDate() != null && !request.getToDate().isBlank()) {
+            try {
+                endDate = LocalDate.parse(request.getToDate());
+            } catch (Exception e) {
+                return ApiResponse.error("Invalid toDate format, expected YYYY-MM-DD", HttpStatus.BAD_REQUEST);
+            }
+        }
+
+        if (endDate.isBefore(startDate)) {
+            return ApiResponse.error("To date must be on or after the departure date", HttpStatus.BAD_REQUEST);
+        }
+
+        long spanDays = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        if (spanDays > MAX_MULTI_DAY_RANGE) {
+            return ApiResponse.error("Date range cannot exceed " + MAX_MULTI_DAY_RANGE + " days",
+                    HttpStatus.BAD_REQUEST);
+        }
+
+        // Fetch the driving polyline & H3 segments once - the route is identical for every day
+        List<List<Double>> routeCoords = routingService.getRouteCoordinates(srcLat, srcLng, destLat, destLng);
+        List<String> fullH3 = h3Service.pathToH3Segments(routeCoords);
+
+        List<Ride> rides = new ArrayList<>();
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            Instant departureTime = date.atTime(timeOfDay).atZone(ZoneOffset.UTC).toInstant();
+            rides.add(buildRide(request, departureTime, srccoords, routeCoords, fullH3));
+        }
+
+        List<Ride> saved = rideRepository.saveAll(rides);
+        return ApiResponse.success(saved, saved.size() + " ride(s) published successfully");
+    }
+
+    private Ride buildRide(RideCreationRequest request, Instant departureTime, List<Double> srccoords,
+            List<List<Double>> routeCoords, List<String> fullH3) {
+        Ride ride = new Ride();
+        ride.setDriverId(request.getDriverId());
+        ride.setDriverName(request.getDriverName());
+        ride.setTotalSeats(request.getTotalSeats());
+        ride.setAvailableSeats(request.getTotalSeats());
+        ride.setEstimatedDurationMinutes(request.getEstimatedDurationMinutes());
+        ride.setPricePerSeat(request.getPricePerSeat());
+        ride.setStatus("ACTIVE");
+        ride.setDepartureTime(departureTime);
+        ride.setSource(parseLocationDto(request.getSource()));
+        ride.setDestination(parseLocationDto(request.getDestination()));
+        ride.setH3RouteSegments(fullH3);
+        ride.setRouteCoords(routeCoords);
+        ride.setCurrentLocation(srccoords);
+
+        Ride.ExecutionDetails details = new Ride.ExecutionDetails();
+        details.setActualDistanceKm(0);
+        ride.setExecutionDetails(details);
+        return ride;
     }
 
     private LocationPoint parseLocationDto(LocationDto dto) {

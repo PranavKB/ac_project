@@ -21,6 +21,10 @@ public class RideCreationRequest {
 
     private String departureTime;
 
+    // Optional: when set, one independent ride is published per day from
+    // departureTime's date through this date (inclusive), same time-of-day each day.
+    private String toDate;
+
     private int estimatedDurationMinutes;
 
     private Double pricePerSeat;
