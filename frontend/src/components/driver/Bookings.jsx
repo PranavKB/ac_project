@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   Card,
   Space,
@@ -8,11 +9,43 @@ import {
   Empty,
   Typography,
 } from "antd";
-import { UserOutlined } from "@ant-design/icons";
+import { UserOutlined, StarFilled } from "@ant-design/icons";
+import { userAPI } from "../../../api";
+import DriverReputationModal from "../rideDetails/DriverReputationModal";
 
 const { Text } = Typography;
 
-function RequestRow({ req, showStatusTag, actions, showSuggestedTag }) {
+function RequestRow({
+  req,
+  showStatusTag,
+  actions,
+  showSuggestedTag,
+  onViewPassengerRating,
+}) {
+  const [passengerProfile, setPassengerProfile] = useState(null);
+
+  useEffect(() => {
+    if (req?.passengerId) {
+      userAPI
+        .get(req.passengerId)
+        .then((res) => setPassengerProfile(res?.data || res))
+        .catch((err) =>
+          console.error("Failed to load passenger profile:", err),
+        );
+    }
+  }, [req?.passengerId]);
+
+  const reputation = passengerProfile?.reputationProfile;
+  const ratingScore = reputation
+    ? (
+        (reputation.trustScore +
+          reputation.reliabilityScore +
+          reputation.comfortScore) /
+        3 /
+        20
+      ).toFixed(1)
+    : "4.5";
+
   return (
     <div
       style={{
@@ -34,11 +67,32 @@ function RequestRow({ req, showStatusTag, actions, showSuggestedTag }) {
               display: "flex",
               alignItems: "center",
               gap: "8px",
+              flexWrap: "wrap",
             }}
           >
-            {req.passengerName}
+            <span>{req.passengerName}</span>
+            <Tag
+              color="gold"
+              icon={<StarFilled style={{ color: "#faad14" }} />}
+              onClick={() =>
+                onViewPassengerRating(
+                  req.passengerName,
+                  passengerProfile,
+                  req.passengerId,
+                )
+              }
+              style={{
+                borderRadius: "999px",
+                cursor: "pointer",
+                padding: "1px 8px",
+                fontSize: "0.8rem",
+                fontWeight: 600,
+              }}
+            >
+              {ratingScore} ⭐
+            </Tag>
             {showSuggestedTag && (
-              <Tag color="gold" style={{ borderRadius: "999px" }}>
+              <Tag color="purple" style={{ borderRadius: "999px" }}>
                 Suggested backup
               </Tag>
             )}
@@ -51,16 +105,33 @@ function RequestRow({ req, showStatusTag, actions, showSuggestedTag }) {
           </div>
         </div>
       </div>
-      {showStatusTag ? (
-        <Tag
-          color="success"
-          style={{ borderRadius: "999px", padding: "3px 10px" }}
+      <Space>
+        <Button
+          size="small"
+          shape="round"
+          icon={<StarFilled style={{ color: "#faad14" }} />}
+          onClick={() =>
+            onViewPassengerRating(
+              req.passengerName,
+              passengerProfile,
+              req.passengerId,
+            )
+          }
+          style={{ fontSize: "0.8rem", fontWeight: 600 }}
         >
-          {req.status}
-        </Tag>
-      ) : (
-        actions
-      )}
+          View Rating
+        </Button>
+        {showStatusTag ? (
+          <Tag
+            color="success"
+            style={{ borderRadius: "999px", padding: "3px 10px" }}
+          >
+            {req.status}
+          </Tag>
+        ) : (
+          actions
+        )}
+      </Space>
     </div>
   );
 }
@@ -101,6 +172,19 @@ export default function Bookings({
   handleAcceptRequest,
   handleRejectRequest,
 }) {
+  const [selectedPassenger, setSelectedPassenger] = useState(null);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+
+  const handleViewPassengerRating = (name, profile, id) => {
+    setSelectedPassenger({
+      name,
+      initial: name?.charAt(0) || "P",
+      profile,
+      id,
+    });
+    setShowRatingModal(true);
+  };
+
   return (
     <div style={{ maxWidth: "800px", margin: "0 auto" }}>
       <Space orientation="vertical" size="large" style={{ width: "100%" }}>
@@ -132,6 +216,7 @@ export default function Bookings({
                   req={req}
                   showStatusTag={false}
                   showSuggestedTag={index === 0 && req.priorityScore > 0}
+                  onViewPassengerRating={handleViewPassengerRating}
                   actions={
                     <Space>
                       <Button
@@ -179,7 +264,12 @@ export default function Bookings({
               style={{ display: "flex", flexDirection: "column", gap: "12px" }}
             >
               {acceptedPassengers.map((req) => (
-                <RequestRow key={req.id} req={req} showStatusTag />
+                <RequestRow
+                  key={req.id}
+                  req={req}
+                  showStatusTag
+                  onViewPassengerRating={handleViewPassengerRating}
+                />
               ))}
             </div>
           ) : (
@@ -187,6 +277,17 @@ export default function Bookings({
           )}
         </Card>
       </Space>
+
+      {selectedPassenger && (
+        <DriverReputationModal
+          visible={showRatingModal}
+          onClose={() => setShowRatingModal(false)}
+          driverName={selectedPassenger.name}
+          driverInitial={selectedPassenger.initial}
+          driverProfile={selectedPassenger.profile}
+          driverId={selectedPassenger.id}
+        />
+      )}
     </div>
   );
 }

@@ -17,6 +17,7 @@ export default function GridDetailsLayout({
   driverInitial,
   driverName,
   driverRating,
+  driverProfile,
   driverVehicle,
   driverSmokingPreference,
   requestedSeatCount,
@@ -70,6 +71,8 @@ export default function GridDetailsLayout({
             showRateButton={showDriverRateButton}
             alreadyRatedDriver={alreadyRatedDriver}
             onRateDriver={onRateDriver}
+            driverProfile={driverProfile}
+            driverId={ride?.driverId}
           />
           <PassengersCard
             passengers={passengers}

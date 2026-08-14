@@ -8,6 +8,7 @@ import {
   Button,
   Empty,
   Select,
+  DatePicker,
   Typography,
 } from "antd";
 import {
@@ -37,11 +38,17 @@ function PostedTripsList({
   selectActiveRide,
 }) {
   const [statusFilter, setStatusFilter] = useState("ACTIVE");
+  const [selectedDate, setSelectedDate] = useState(null);
 
-  const filteredRides =
-    statusFilter === "ALL"
-      ? postedRides
-      : postedRides.filter((ride) => ride.status === statusFilter);
+  const filteredRides = postedRides.filter((ride) => {
+    const matchesStatus =
+      statusFilter === "ALL" || ride.status === statusFilter;
+    const matchesDate =
+      !selectedDate ||
+      (ride.departureTime &&
+        dayjs(ride.departureTime).isSame(selectedDate, "day"));
+    return matchesStatus && matchesDate;
+  });
 
   useEffect(() => {
     const stillVisible = filteredRides.some((r) => r.id === selectedRide?.id);
@@ -49,7 +56,7 @@ function PostedTripsList({
       selectActiveRide(filteredRides[0] || null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter]);
+  }, [statusFilter, selectedDate]);
 
   if (loadingRides) {
     return (
@@ -65,14 +72,32 @@ function PostedTripsList({
 
   return (
     <div>
-      <Select
-        value={statusFilter}
-        onChange={setStatusFilter}
-        options={STATUS_FILTER_OPTIONS}
-        style={{ width: "100%", marginBottom: "12px" }}
-      />
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px",
+          marginBottom: "16px",
+        }}
+      >
+        <Select
+          value={statusFilter}
+          onChange={setStatusFilter}
+          options={STATUS_FILTER_OPTIONS}
+          style={{ width: "100%" }}
+        />
+        <DatePicker
+          value={selectedDate}
+          onChange={(date) => setSelectedDate(date)}
+          placeholder="Filter by departure date (leave empty for all)"
+          allowClear
+          format="DD MMM YYYY"
+          style={{ width: "100%" }}
+        />
+      </div>
+
       {filteredRides.length === 0 ? (
-        <Empty description="No posted trips match this filter." />
+        <Empty description="No posted trips match your filters." />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {filteredRides.map((ride) => (
@@ -109,7 +134,20 @@ function PostedTripsList({
                   {ride.source?.name.split(",")[0]} {" -> "}
                   {ride.destination?.name.split(",")[0]}
                 </div>
-                <Text type="secondary" style={{ fontSize: "0.85rem" }}>
+                <Text
+                  type="secondary"
+                  style={{
+                    fontSize: "0.82rem",
+                    display: "block",
+                    marginBottom: "2px",
+                  }}
+                >
+                  📅{" "}
+                  {ride.departureTime
+                    ? dayjs(ride.departureTime).format("DD MMM YYYY, HH:mm")
+                    : "N/A"}
+                </Text>
+                <Text type="secondary" style={{ fontSize: "0.82rem" }}>
                   {ride.availableSeats} seat(s) left | Status: {ride.status}
                 </Text>
               </div>
