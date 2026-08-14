@@ -6,7 +6,11 @@ import PostedTrips from "./driver/PostedTrips";
 import Bookings from "./driver/Bookings";
 import { rideAPI, requestAPI } from "../../api";
 import { calculateRouteDistance } from "../utils/helpers";
-import { updateMapRoute, executeDriverAction } from "../utils/driverActions";
+import {
+  updateMapRoute,
+  executeDriverAction,
+  confirmDeleteRide,
+} from "../utils/driverActions";
 import { Tabs, Badge, Modal } from "antd";
 
 const EMPTY_MAP_PROPS = { source: null, destination: null, routeCoords: null };
@@ -104,6 +108,13 @@ export default function DriverDashboard() {
         refreshUser();
       },
     );
+  };
+
+  const handleDeleteRide = (rideId) => {
+    const targetId = rideId || selectedRide?.id;
+    if (targetId) {
+      confirmDeleteRide(targetId, rideAPI.delete, fetchDriverRides);
+    }
   };
 
   const handleAcceptRequest = async (requestId) => {
@@ -205,6 +216,7 @@ export default function DriverDashboard() {
                 mapProps={postedTripMapProps}
                 handleStartTrip={handleStartTrip}
                 handleCompleteTrip={handleCompleteTrip}
+                handleDeleteRide={handleDeleteRide}
                 onNavigateToRide={(rideId) => navigate(`/rides/${rideId}`)}
               />
             ),

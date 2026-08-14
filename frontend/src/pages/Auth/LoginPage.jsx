@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { authAPI } from "../../../api";
 import useAuth from "../../context/AuthContext/useAuth";
 import { Card, Form, Input, Button, Alert, Typography } from "antd";
@@ -10,6 +10,8 @@ const { Title, Paragraph } = Typography;
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isExpiredSession = searchParams.get("expired") === "true";
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -63,9 +65,19 @@ export default function LoginPage() {
           </Paragraph>
         </div>
 
+        {isExpiredSession && !error && (
+          <Alert
+            message="Session Expired"
+            description="Your session has expired. Please log in again."
+            type="warning"
+            showIcon
+            style={{ marginBottom: "16px", borderRadius: "8px" }}
+          />
+        )}
+
         {error && (
           <Alert
-            title={error}
+            message={error}
             type="error"
             showIcon
             style={{ marginBottom: "16px", borderRadius: "8px" }}

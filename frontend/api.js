@@ -1,4 +1,5 @@
 import axios from "axios";
+import { isTokenExpired } from "./src/utils/jwtUtils";
 
 export const BASE_URL = "http://localhost:8080";
 
@@ -9,11 +10,25 @@ const API = axios.create({
   },
 });
 
-// Request interceptor to inject the JWT token into the Authorization header
+export const clearAuthAndRedirect = (expired = true) => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  localStorage.removeItem("activeRole");
+  if (!window.location.pathname.startsWith("/login")) {
+    window.location.href = expired ? "/login?expired=true" : "/login";
+  }
+};
+
+// Request interceptor to inject the JWT token into the Authorization header and pre-check expiration
 API.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
+    const isAuthEndpoint = config.url && config.url.startsWith("/auth/");
     if (token) {
+      if (isTokenExpired(token) && !isAuthEndpoint) {
+        clearAuthAndRedirect(true);
+        return Promise.reject(new axios.Cancel("JWT token expired"));
+      }
       config.headers["Authorization"] = `Bearer ${token}`;
     }
     return config;
@@ -27,11 +42,15 @@ API.interceptors.request.use(
 API.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      localStorage.removeItem("activeRole");
-      window.location.href = "/login";
+    if (
+      error.response &&
+      (error.response.status === 401 || error.response.status === 403)
+    ) {
+      const isAuthEndpoint =
+        error.config?.url && error.config.url.startsWith("/auth/");
+      if (!isAuthEndpoint) {
+        clearAuthAndRedirect(true);
+      }
     }
     return Promise.reject(error);
   },
@@ -123,6 +142,10 @@ export const rideAPI = {
   },
   updateStatus: async (id, status) => {
     const res = await API.put(`/rides/${id}/status`, { status });
+    return res.data;
+  },
+  delete: async (id) => {
+    const res = await API.delete(`/rides/${id}`);
     return res.data;
   },
 };
