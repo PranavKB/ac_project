@@ -12,6 +12,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,8 +27,10 @@ import com.cdac.carpooling.dto.RideSearchRequest;
 import com.cdac.carpooling.model.LocationPoint;
 import com.cdac.carpooling.model.Notification;
 import com.cdac.carpooling.model.Ride;
+import com.cdac.carpooling.model.RideRequest;
 import com.cdac.carpooling.model.User;
 import com.cdac.carpooling.repository.RideRepository;
+import com.cdac.carpooling.repository.RideRequestRepository;
 import com.cdac.carpooling.repository.UserRepository;
 import com.cdac.carpooling.service.CarbonService;
 import com.cdac.carpooling.service.H3Service;
@@ -49,6 +52,7 @@ public class RideController {
     private final H3Service h3Service;
     private final RideMatchingService rideMatchingService;
     private final RideRepository rideRepository;
+    private final RideRequestRepository rideRequestRepository;
     private final RoutingService routingService;
     private final NotificationService notificationService;
     private final UserRepository userRepository;
@@ -319,6 +323,68 @@ public class RideController {
         Ride saved = rideLifecycleService.completeRide(ride, distanceKm);
 
         return ApiResponse.success(saved, "Ride completed successfully");
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Object>> deleteRide(@PathVariable String id) {
+        Ride ride = rideRepository.findById(id).orElse(null);
+        if (ride == null) {
+            return ApiResponse.error("Ride not found", HttpStatus.NOT_FOUND);
+        }
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.getName() == null) {
+            return ApiResponse.error("Unauthorized", HttpStatus.UNAUTHORIZED);
+        }
+
+        User currentUser = userRepository.findByEmail(authentication.getName()).orElse(null);
+        if (currentUser == null) {
+            return ApiResponse.error("User not found", HttpStatus.UNAUTHORIZED);
+        }
+
+        boolean isAdmin = currentUser.getRoles() != null && currentUser.getRoles().contains("ROLE_ADMIN");
+        if (!ride.getDriverId().equals(currentUser.getId()) && !isAdmin) {
+            return ApiResponse.error("You are not authorized to delete this ride", HttpStatus.FORBIDDEN);
+        }
+
+        if ("COMPLETED".equals(ride.getStatus())) {
+            return ApiResponse.error("Cannot delete a completed ride", HttpStatus.BAD_REQUEST);
+        }
+
+        // Notify and cancel any passenger ride requests for this ride
+        List<RideRequest> requests = rideRequestRepository.findByRideId(id);
+        if (requests != null && !requests.isEmpty()) {
+            String srcName = ride.getSource() != null ? ride.getSource().getName().split(",")[0] : "source";
+            String destName = ride.getDestination() != null ? ride.getDestination().getName().split(",")[0] : "destination";
+            for (RideRequest req : requests) {
+                req.setStatus("CANCELLED");
+                rideRequestRepository.save(req);
+                notificationService.create(
+                        req.getPassengerId(),
+                        Notification.Type.RIDE_CANCELLED,
+                        "Ride Cancelled",
+                        "The driver has cancelled the ride from " + srcName + " to " + destName + ".",
+                        ride.getId()
+                );
+            }
+        }
+
+        if (ride.getPassengerIds() != null) {
+            for (String passengerId : ride.getPassengerIds()) {
+                notificationService.create(
+                        passengerId,
+                        Notification.Type.RIDE_CANCELLED,
+                        "Ride Cancelled",
+                        "A ride you booked was cancelled by the driver.",
+                        ride.getId()
+                );
+            }
+        }
+
+        ride.setStatus("CANCELLED");
+        rideRepository.save(ride);
+
+        return ApiResponse.success(null, "Ride deleted successfully");
     }
 
 }

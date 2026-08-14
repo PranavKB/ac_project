@@ -144,6 +144,10 @@ export const rideAPI = {
     const res = await API.put(`/rides/${id}/status`, { status });
     return res.data;
   },
+  delete: async (id) => {
+    const res = await API.delete(`/rides/${id}`);
+    return res.data;
+  },
 };
 
 export const routeAPI = {

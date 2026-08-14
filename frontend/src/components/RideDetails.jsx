@@ -11,6 +11,7 @@ import {
   executeRideAction,
   requestRideBooking,
 } from "../utils/rideDetailsActions";
+import { confirmDeleteRide } from "../utils/driverActions";
 import { fetchRideRatings, submitRating } from "../utils/ratingActions";
 import { submitReport } from "../utils/reportActions";
 import useAuth from "../context/AuthContext/useAuth";
@@ -183,6 +184,7 @@ export default function RideDetails() {
       "Trip started! Status is now ONGOING.",
       fetchRideData,
     );
+
   const handleCompleteTrip = () =>
     executeRideAction(
       () => rideAPI.complete(ride.id, distanceKm || 0),
@@ -193,10 +195,14 @@ export default function RideDetails() {
       },
     );
 
+  const handleDeleteRide = () => {
+    if (ride?.id)
+      confirmDeleteRide(ride.id, rideAPI.delete, () => navigate(-1));
+  };
+
   const rideCompleted = ride.status === "COMPLETED";
   const showDriverRateButton =
     !isDriver && rideCompleted && bookingStatus === "APPROVED";
-  const alreadyRatedDriver = hasRated(ride.driverId);
   const showPassengerRatingActions = isDriver && rideCompleted;
 
   return (
@@ -245,6 +251,7 @@ export default function RideDetails() {
         isDriver={isDriver}
         handleStartTrip={handleStartTrip}
         handleCompleteTrip={handleCompleteTrip}
+        handleDeleteRide={handleDeleteRide}
         isBooked={isBooked}
         bookingStatus={bookingStatus}
         handleBookRide={handleBookRide}
@@ -252,7 +259,6 @@ export default function RideDetails() {
         distanceKm={distanceKm}
         co2Kg={co2Kg}
         showDriverRateButton={showDriverRateButton}
-        alreadyRatedDriver={alreadyRatedDriver}
         onRateDriver={() =>
           setRatingTarget({ id: ride.driverId, name: driverName })
         }

@@ -1,5 +1,5 @@
 import { Card, Avatar, Space, Typography, Button } from "antd";
-import { PlayCircleOutlined } from "@ant-design/icons";
+import { PlayCircleOutlined, DeleteOutlined } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
 
@@ -39,24 +39,45 @@ function BookingStatusBanner({ bookingStatus, rideStatus }) {
   );
 }
 
-function DriverActions({ rideStatus, handleStartTrip, handleCompleteTrip }) {
+function DriverActions({
+  rideStatus,
+  handleStartTrip,
+  handleCompleteTrip,
+  handleDeleteRide,
+}) {
   return (
     <>
       {rideStatus === "ACTIVE" && (
-        <Button
-          type="primary"
-          block
-          size="large"
-          icon={<PlayCircleOutlined />}
-          onClick={handleStartTrip}
-          style={{
-            height: "48px",
-            fontWeight: 700,
-            backgroundColor: "#52c41a",
-          }}
-        >
-          Start Trip
-        </Button>
+        <Space orientation="vertical" style={{ width: "100%" }} size="small">
+          <Button
+            type="primary"
+            block
+            size="large"
+            icon={<PlayCircleOutlined />}
+            onClick={handleStartTrip}
+            style={{
+              height: "48px",
+              fontWeight: 700,
+              backgroundColor: "#52c41a",
+            }}
+          >
+            Start Trip
+          </Button>
+          <Button
+            danger
+            block
+            size="large"
+            icon={<DeleteOutlined />}
+            onClick={handleDeleteRide}
+            style={{
+              height: "44px",
+              fontWeight: 600,
+              borderRadius: "12px",
+            }}
+          >
+            Delete Published Ride
+          </Button>
+        </Space>
       )}
 
       {rideStatus === "ONGOING" && (
@@ -83,6 +104,20 @@ function DriverActions({ rideStatus, handleStartTrip, handleCompleteTrip }) {
           }}
         >
           ✓ Trip Completed Successfully
+        </span>
+      )}
+
+      {rideStatus === "CANCELLED" && (
+        <span
+          style={{
+            color: "#ff4d4f",
+            fontWeight: 700,
+            fontSize: "1rem",
+            textAlign: "center",
+            display: "block",
+          }}
+        >
+          ✕ Ride Cancelled
         </span>
       )}
     </>
@@ -150,6 +185,7 @@ export default function SidebarDetailCard({
   rideStatus,
   handleStartTrip,
   handleCompleteTrip,
+  handleDeleteRide,
   isBooked,
   bookingStatus,
   handleBookRide,
@@ -314,6 +350,7 @@ export default function SidebarDetailCard({
             rideStatus={rideStatus}
             handleStartTrip={handleStartTrip}
             handleCompleteTrip={handleCompleteTrip}
+            handleDeleteRide={handleDeleteRide}
           />
         ) : (
           <PassengerActions

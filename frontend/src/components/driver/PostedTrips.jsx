@@ -15,6 +15,7 @@ import {
   FileTextOutlined,
   PlayCircleOutlined,
   SafetyCertificateOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import MapComponent from "../MapComponent";
@@ -26,6 +27,7 @@ const STATUS_FILTER_OPTIONS = [
   { value: "ACTIVE", label: "ACTIVE rides" },
   { value: "ONGOING", label: "ONGOING rides" },
   { value: "COMPLETED", label: "COMPLETED rides" },
+  { value: "CANCELLED", label: "CANCELLED rides" },
 ];
 
 function PostedTripsList({
@@ -128,6 +130,7 @@ function SelectedRideCard({
   selectedRide,
   handleStartTrip,
   handleCompleteTrip,
+  handleDeleteRide,
   onNavigateToRide,
 }) {
   if (!selectedRide) return null;
@@ -159,7 +162,18 @@ function SelectedRideCard({
               </Text>
             )}
             <Text type="secondary">
-              Status: <Tag color="processing">{selectedRide.status}</Tag>
+              Status:{" "}
+              <Tag
+                color={
+                  selectedRide.status === "ACTIVE"
+                    ? "processing"
+                    : selectedRide.status === "CANCELLED"
+                      ? "error"
+                      : "default"
+                }
+              >
+                {selectedRide.status}
+              </Tag>
             </Text>
           </Space>
         </div>
@@ -200,19 +214,33 @@ function SelectedRideCard({
 
         <div>
           {selectedRide.status === "ACTIVE" && (
-            <Button
-              type="primary"
-              shape="round"
-              icon={<PlayCircleOutlined />}
-              onClick={handleStartTrip}
-              style={{
-                backgroundColor: "#52c41a",
-                height: "40px",
-                fontWeight: 600,
-              }}
-            >
-              Start Trip
-            </Button>
+            <Space>
+              <Button
+                danger
+                shape="round"
+                icon={<DeleteOutlined />}
+                onClick={() => handleDeleteRide(selectedRide.id)}
+                style={{
+                  height: "40px",
+                  fontWeight: 600,
+                }}
+              >
+                Delete Ride
+              </Button>
+              <Button
+                type="primary"
+                shape="round"
+                icon={<PlayCircleOutlined />}
+                onClick={handleStartTrip}
+                style={{
+                  backgroundColor: "#52c41a",
+                  height: "40px",
+                  fontWeight: 600,
+                }}
+              >
+                Start Trip
+              </Button>
+            </Space>
           )}
 
           {selectedRide.status === "ONGOING" && (
@@ -234,6 +262,14 @@ function SelectedRideCard({
               ✓ Trip Completed Successfully
             </span>
           )}
+
+          {selectedRide.status === "CANCELLED" && (
+            <span
+              style={{ color: "#ff4d4f", fontWeight: 700, fontSize: "0.95rem" }}
+            >
+              ✕ Ride Cancelled
+            </span>
+          )}
         </div>
       </div>
     </Card>
@@ -248,6 +284,7 @@ export default function PostedTrips({
   mapProps,
   handleStartTrip,
   handleCompleteTrip,
+  handleDeleteRide,
   onNavigateToRide,
 }) {
   return (
@@ -295,6 +332,7 @@ export default function PostedTrips({
             selectedRide={selectedRide}
             handleStartTrip={handleStartTrip}
             handleCompleteTrip={handleCompleteTrip}
+            handleDeleteRide={handleDeleteRide}
             onNavigateToRide={onNavigateToRide}
           />
         </Space>

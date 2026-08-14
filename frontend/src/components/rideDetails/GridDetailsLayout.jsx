@@ -33,6 +33,7 @@ export default function GridDetailsLayout({
   isDriver,
   handleStartTrip,
   handleCompleteTrip,
+  handleDeleteRide,
   isBooked,
   bookingStatus,
   handleBookRide,
@@ -145,6 +146,7 @@ export default function GridDetailsLayout({
             rideStatus={ride?.status}
             handleStartTrip={handleStartTrip}
             handleCompleteTrip={handleCompleteTrip}
+            handleDeleteRide={handleDeleteRide}
             isBooked={isBooked}
             bookingStatus={bookingStatus}
             handleBookRide={handleBookRide}
