@@ -1,9 +1,17 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { AuthContext } from "./auth-context";
 import { userAPI } from "../../../api";
+import { isTokenExpired } from "../../utils/jwtUtils";
 
 export default function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
+    const token = localStorage.getItem("token");
+    if (!token || isTokenExpired(token)) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("activeRole");
+      return null;
+    }
     const savedUser = localStorage.getItem("user");
     return savedUser ? JSON.parse(savedUser) : null;
   });
@@ -16,6 +24,23 @@ export default function AuthProvider({ children }) {
     }
     return null;
   });
+
+  const logout = useCallback(() => {
+    setUser(null);
+    setActiveRole(null);
+    localStorage.removeItem("user");
+    localStorage.removeItem("activeRole");
+    localStorage.removeItem("token");
+  }, []);
+
+  const checkSessionValidity = useCallback(() => {
+    const token = localStorage.getItem("token");
+    if (!token || isTokenExpired(token)) {
+      logout();
+      return false;
+    }
+    return true;
+  }, [logout]);
 
   const login = (userData) => {
     const token = userData?.data?.token;
@@ -40,21 +65,13 @@ export default function AuthProvider({ children }) {
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    setActiveRole(null);
-    localStorage.removeItem("user");
-    localStorage.removeItem("activeRole");
-    localStorage.removeItem("token");
-  };
-
   const switchRole = (newRole) => {
     setActiveRole(newRole);
     localStorage.setItem("activeRole", newRole);
   };
 
   const refreshUser = async () => {
-    if (!user?.data?.id) return;
+    if (!user?.data?.id || !checkSessionValidity()) return;
     try {
       const res = await userAPI.get(user.data.id);
       if (res && res.success) {
@@ -66,9 +83,22 @@ export default function AuthProvider({ children }) {
     }
   };
 
+  const isSessionValid = Boolean(
+    user?.data && !isTokenExpired(localStorage.getItem("token")),
+  );
+
   return (
     <AuthContext.Provider
-      value={{ user, activeRole, switchRole, login, logout, refreshUser }}
+      value={{
+        user,
+        activeRole,
+        isSessionValid,
+        checkSessionValidity,
+        switchRole,
+        login,
+        logout,
+        refreshUser,
+      }}
     >
       {children}
     </AuthContext.Provider>
