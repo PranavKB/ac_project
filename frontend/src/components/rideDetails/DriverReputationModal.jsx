@@ -33,7 +33,7 @@ function OverallReputationHeader({
     <Card
       style={{
         borderRadius: "12px",
-        background: "linear-gradient(135deg, #054752 0%, #007791 100%)",
+        background: "linear-gradient(135deg, #05d5f9 0%, #04c0ea 100%)",
         color: "#fff",
         marginBottom: "20px",
       }}
@@ -47,7 +47,7 @@ function OverallReputationHeader({
         }}
       >
         <div>
-          <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: "0.9rem" }}>
+          <Text style={{ color: "rgba(14, 14, 14, 0.85)", fontSize: "0.9rem" }}>
             Overall Driver Reputation
           </Text>
           <div
@@ -58,7 +58,7 @@ function OverallReputationHeader({
               marginTop: "4px",
             }}
           >
-            <Title level={2} style={{ color: "#fff", margin: 0 }}>
+            <Title level={2} style={{ margin: 0 }}>
               {overallStar}
             </Title>
             <Rate
@@ -68,7 +68,7 @@ function OverallReputationHeader({
               style={{ color: "#faad14", fontSize: "1.2rem" }}
             />
           </div>
-          <Text style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.85rem" }}>
+          <Text style={{ fontSize: "0.85rem" }}>
             {overall100} / 100 Overall Score • {ratingsCount} Review
             {ratingsCount !== 1 ? "s" : ""}
           </Text>
@@ -92,7 +92,6 @@ function OverallReputationHeader({
       />
       <Text
         style={{
-          color: "#e6f7ff",
           fontSize: "0.88rem",
           fontStyle: "italic",
         }}
@@ -125,9 +124,7 @@ function CoreDimensionsGrid({ trustScore, reliabilityScore, comfortScore }) {
           }}
           styles={{ body: { padding: "14px" } }}
         >
-          <Space
-            style={{ color: "#52c41a", fontWeight: 700, marginBottom: "6px" }}
-          >
+          <Space style={{ fontWeight: 700, marginBottom: "6px" }}>
             <SafetyCertificateOutlined /> Trust ({Math.round(trustScore)}/100)
           </Space>
           <Progress
@@ -148,9 +145,7 @@ function CoreDimensionsGrid({ trustScore, reliabilityScore, comfortScore }) {
           }}
           styles={{ body: { padding: "14px" } }}
         >
-          <Space
-            style={{ color: "#00aff5", fontWeight: 700, marginBottom: "6px" }}
-          >
+          <Space style={{ fontWeight: 700, marginBottom: "6px" }}>
             <ThunderboltOutlined /> Reliability ({Math.round(reliabilityScore)}
             /100)
           </Space>
@@ -172,9 +167,7 @@ function CoreDimensionsGrid({ trustScore, reliabilityScore, comfortScore }) {
           }}
           styles={{ body: { padding: "14px" } }}
         >
-          <Space
-            style={{ color: "#faad14", fontWeight: 700, marginBottom: "6px" }}
-          >
+          <Space style={{ fontWeight: 700, marginBottom: "6px" }}>
             <SmileOutlined /> Comfort ({Math.round(comfortScore)}/100)
           </Space>
           <Progress

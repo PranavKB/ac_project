@@ -21,6 +21,7 @@ public class ReputationService {
 
     private final RatingRepository ratingRepository;
     private final UserRepository userRepository;
+    private final AiSummaryService aiSummaryService;
 
     public void recalculate(String reviewedUserId) {
         List<Rating> ratings = ratingRepository.findByReviewedUserId(reviewedUserId);
@@ -39,7 +40,11 @@ public class ReputationService {
         double comfortScore = weightedAverage(ratings, m -> 0.6 * m.getVehicleCleanlinessMetric()
                 + 0.4 * m.getCommunicationQualityFeedback());
 
-        String aiSummary = buildSummary((trustScore + reliabilityScore + comfortScore) / 3.0);
+        double overallScore = (trustScore + reliabilityScore + comfortScore) / 3.0;
+        String generatedSummary = aiSummaryService.generateSummary(ratings);
+        final String aiSummary = (generatedSummary == null || generatedSummary.isBlank())
+                ? buildSummary(overallScore)
+                : generatedSummary;
 
         userRepository.findById(reviewedUserId).ifPresent(user -> {
             user.setReputationProfile(new User.ReputationProfile(
