@@ -184,7 +184,6 @@ export default function RideDetails() {
       "Trip started! Status is now ONGOING.",
       fetchRideData,
     );
-
   const handleCompleteTrip = () =>
     executeRideAction(
       () => rideAPI.complete(ride.id, distanceKm || 0),
@@ -194,7 +193,6 @@ export default function RideDetails() {
         refreshUser();
       },
     );
-
   const handleDeleteRide = () => {
     if (ride?.id)
       confirmDeleteRide(ride.id, rideAPI.delete, () => navigate(-1));
@@ -235,6 +233,7 @@ export default function RideDetails() {
         driverInitial={driverInitial}
         driverName={driverName}
         driverRating={driverRating}
+        driverProfile={driverProfile}
         driverVehicle={driverVehicle}
         driverSmokingPreference={driverSmokingPreference}
         requestedSeatCount={requestedSeatCount}
