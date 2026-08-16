@@ -28,18 +28,18 @@ While conventional ride-hailing and carpooling platforms rely on simple origin-d
 
 ```mermaid
 graph TB
-    subgraph Client Layer ["Client Layer (React 19 + Vite)"]
+    subgraph ClientLayer ["Client Layer (React 19 + Vite)"]
         UI["Web Dashboard / Mobile Web<br/>(Ant Design + Leaflet Maps)"]
         WSClient["STOMP / SockJS Client<br/>(Real-Time Messaging & Notifications)"]
         AxiosClient["Axios HTTP Client<br/>(REST API Consumer)"]
     end
 
-    subgraph API Gateway & Security ["API Gateway & Security"]
+    subgraph APIGateway ["API Gateway & Security"]
         SecFilter["JwtAuthenticationFilter<br/>(Stateless JWT Auth & Context Injection)"]
         CORS["WebConfig / CORS Filter"]
     end
 
-    subgraph Application Core ["Spring Boot Application Engine"]
+    subgraph ApplicationCore ["Spring Boot Application Engine"]
         subgraph Controllers ["Controllers"]
             RC["RideController"]
             RRC["RideRequestController"]
@@ -47,7 +47,7 @@ graph TB
             MC["MessageController / NotificationController"]
         end
 
-        subgraph Domain Services ["Domain Services"]
+        subgraph DomainServices ["Domain Services"]
             RMS["RideMatchingService<br/>(Route Overlap & Priority Scoring)"]
             H3S["H3Service<br/>(Uber H3 Hexagonal Grid Transformer)"]
             RLS["RideLifecycleService<br/>(State Transitions & Expiry Sweeper)"]
@@ -56,20 +56,24 @@ graph TB
             AIS["AiSummaryService / Batch Scheduler<br/>(LLM Feedback Summarization)"]
         end
 
-        subgraph Event & Messaging ["Event & Real-time Layer"]
+        subgraph EventMessaging ["Event & Real-time Layer"]
             WebSocketBroker["STOMP Broker<br/>(/topic/messages, /topic/notifications)"]
             MailService["EmailService<br/>(Thymeleaf + Spring Mail Async)"]
         end
     end
 
-    subgraph Data & Spatial Layer ["Data & Persistence Layer"]
+    subgraph DataLayer ["Data & Persistence Layer"]
         MongoDb[(MongoDB Database<br/>GeoJSON 2DSphere + H3 Indexed Documents)]
     end
 
     UI --> AxiosClient
     UI --> WSClient
-    AxiosClient --> CORS --> SecFilter
-    SecFilter --> Controllers
+    AxiosClient --> CORS
+    CORS --> SecFilter
+    SecFilter --> RC
+    SecFilter --> RRC
+    SecFilter --> AC
+    SecFilter --> MC
 
     RC --> RMS
     RC --> RLS
@@ -80,8 +84,12 @@ graph TB
 
     MC --> WebSocketBroker
     RLS --> MailService
-    Controllers --> MongoDb
-    Domain Services --> MongoDb
+    RC --> MongoDb
+    RRC --> MongoDb
+    AC --> MongoDb
+    RMS --> MongoDb
+    RLS --> MongoDb
+    RS --> MongoDb
 ```
 
 ---
